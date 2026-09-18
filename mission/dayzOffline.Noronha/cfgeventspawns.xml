@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<eventposdef>
+
+    <event name="StaticHeliCrash">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="45" />
+        <pos x="9999.0" z="9999.0" a="90" />
+    </event>
+
+    <event name="StaticMilitaryConvoy">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+    <event name="StaticContaminatedArea">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+
+    <event name="StaticPoliceSituation">
+        <zone smin="1" smax="3" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="90" />
+        <pos x="9999.0" z="9999.0" a="180" />
+    </event>
+
+    <event name="StaticPoliceCar">
+        <zone smin="1" smax="3" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="90" />
+        <pos x="9999.0" z="9999.0" a="180" />
+    </event>
+
+
+    <event name="VehicleBoat">
+        <zone smin="3" smax="6" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="45" />
+        <pos x="9999.0" z="9999.0" a="90" />
+    </event>
+
+    <event name="VehicleCivilianSedan">
+        <zone smin="1" smax="3" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="90" />
+        <pos x="9999.0" z="9999.0" a="180" />
+    </event>
+
+    <event name="VehicleSedan02">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+    <event name="VehicleOffroadHatchback">
+        <zone smin="1" smax="3" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+    <event name="VehicleHatchback02">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+    <event name="VehicleOffroad02">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+    <event name="VehicleTruck01">
+        <zone smin="1" smax="2" dmin="3" dmax="5" r="45" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+        <pos x="9999.0" z="9999.0" a="0" />
+    </event>
+
+
+    <event name="VehicleTransitBus" />
+    
+    <event name="InfectedVillage" />
+    <event name="InfectedCity" />
+    <event name="InfectedSolitude" />
+    <event name="InfectedArmy" />
+    <event name="InfectedPolice" />
+    <event name="InfectedMedic" />
+    <event name="InfectedFirefighter" />
+    <event name="InfectedPrisoner" />
+    
+    <event name="AnimalWildBoar" />
+    <event name="AnimalCow" />
+    <event name="AnimalSheep" />
+    <event name="AnimalDeer" />
+    <event name="AnimalRoeDeer" />
+    <event name="AnimalWolf" />
+    
+    <event name="StaticTrain" />
+    <event name="ItemPlanks" />
+    <event name="StaticChristmasTree" />
+    <event name="StaticBonfire" />
+    <event name="StaticSantaCrash" />
+
+</eventposdef>

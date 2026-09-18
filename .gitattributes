@@ -1,0 +1,3 @@
+# The offline mission is copied from the DayZ workspace. Preserve its legacy
+# line endings and whitespace verbatim instead of reformatting game data.
+mission/** -text -whitespace

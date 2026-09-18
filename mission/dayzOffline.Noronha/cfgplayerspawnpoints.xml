@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<playerspawnpoints>
+    
+    <fresh>
+        <spawn_params>
+            <min_dist_infected>30</min_dist_infected>
+            <max_dist_infected>70</max_dist_infected>
+            <min_dist_player>65</min_dist_player>
+            <max_dist_player>150</max_dist_player>
+            <min_dist_static>0</min_dist_static>
+            <max_dist_static>2</max_dist_static>
+        </spawn_params>
+        
+        <generator_params>
+            <grid_density>4</grid_density>
+            <grid_width>100</grid_width> 
+            <grid_height>100</grid_height>
+            <min_dist_static>0</min_dist_static>
+            <max_dist_static>2</max_dist_static>
+            <min_steepness>-45</min_steepness>
+            <max_steepness>45</max_steepness>
+        </generator_params>
+        
+        <group_params>
+            <enablegroups>true</enablegroups>
+            <groups_as_regular>true</groups_as_regular>
+            <lifetime>240</lifetime>
+            <counter>-1</counter>
+        </group_params>
+        
+        <generator_posbubbles>
+            
+            <group name="Spawn_Cacimba">
+                <pos x="4662.59" z="6550.35" />
+                <pos x="4651.07" z="6657.55" />
+            </group>
+            
+            <group name="Spawn_Sancho">
+                <pos x="4159.94" z="6053.32" />
+            </group>
+
+            <group name="Spawn_Boldro">
+                <pos x="6016.48" z="7142.68" />
+                <pos x="5164.33" z="6769.49" />
+            </group>
+            
+            <group name="Spawn_Conceicao">
+                <pos x="7149.84" z="7420.70" />
+            </group>
+            
+            <group name="Spawn_Atalaia">
+                <pos x="8016.25" z="5854.31" />
+            </group>
+
+            <group name="Spawn_Leao">
+                <pos x="4818.69" z="4339.22" />
+            </group>
+            
+            <group name="Spawn_Sueste">
+                <pos x="6289.14" z="4827.86" />
+            </group>
+
+        </generator_posbubbles>
+    </fresh>
+
+
+    <hop>
+        <spawn_params>
+            <min_dist_infected>30.0</min_dist_infected>
+            <max_dist_infected>70.0</max_dist_infected>
+            <min_dist_player>25.0</min_dist_player>
+            <max_dist_player>70.0</max_dist_player>
+            <min_dist_static>0.5</min_dist_static>
+            <max_dist_static>2.0</max_dist_static>
+        </spawn_params>
+        <generator_params>
+            <grid_density>4</grid_density>
+            <grid_width>150</grid_width>
+            <grid_height>150</grid_height>
+            <min_dist_static>0</min_dist_static>
+            <max_dist_static>2</max_dist_static>
+            <min_steepness>-45</min_steepness>
+            <max_steepness>45</max_steepness>
+        </generator_params>
+        <group_params>
+            <enablegroups>false</enablegroups>
+            <groups_as_regular>true</groups_as_regular>
+            <lifetime>360</lifetime>
+            <counter>-1</counter>
+        </group_params>
+        
+        <generator_posbubbles>
+            <group name="Spawn_Cacimba"><pos x="4662.59" z="6550.35" /></group>
+            <group name="Spawn_Sancho"><pos x="4159.94" z="6053.32" /></group>
+            <group name="Spawn_Boldro"><pos x="6016.48" z="7142.68" /></group>
+            <group name="Spawn_Conceicao"><pos x="7149.84" z="7420.70" /></group>
+            <group name="Spawn_Atalaia"><pos x="8016.25" z="5854.31" /></group>
+            <group name="Spawn_Leao"><pos x="4818.69" z="4339.22" /></group>
+            <group name="Spawn_Sueste"><pos x="6289.14" z="4827.86" /></group>
+        </generator_posbubbles>
+    </hop>
+
+
+    <travel>
+        <spawn_params>
+            <min_dist_infected>30.0</min_dist_infected>
+            <max_dist_infected>70.0</max_dist_infected>
+            <min_dist_player>25.0</min_dist_player>
+            <max_dist_player>70.0</max_dist_player>
+            <min_dist_static>0.5</min_dist_static>
+            <max_dist_static>2.0</max_dist_static>
+        </spawn_params>
+        <generator_params>
+            <grid_density>4</grid_density>
+            <grid_width>150</grid_width>
+            <grid_height>150</grid_height>
+            <min_dist_static>0</min_dist_static>
+            <max_dist_static>2</max_dist_static>
+            <min_steepness>-45</min_steepness>
+            <max_steepness>45</max_steepness>
+        </generator_params>
+        <group_params>
+            <enablegroups>false</enablegroups>
+            <groups_as_regular>true</groups_as_regular>
+            <lifetime>360</lifetime>
+            <counter>-1</counter>
+        </group_params>
+        
+        <generator_posbubbles>
+            <group name="Spawn_Cacimba"><pos x="4662.59" z="6550.35" /></group>
+            <group name="Spawn_Sancho"><pos x="4159.94" z="6053.32" /></group>
+            <group name="Spawn_Boldro"><pos x="6016.48" z="7142.68" /></group>
+            <group name="Spawn_Conceicao"><pos x="7149.84" z="7420.70" /></group>
+            <group name="Spawn_Atalaia"><pos x="8016.25" z="5854.31" /></group>
+            <group name="Spawn_Leao"><pos x="4818.69" z="4339.22" /></group>
+            <group name="Spawn_Sueste"><pos x="6289.14" z="4827.86" /></group>
+        </generator_posbubbles>
+    </travel>
+
+</playerspawnpoints>

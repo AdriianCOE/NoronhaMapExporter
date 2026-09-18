@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<messages>
+
+    <message>
+        <delay>2</delay>
+        <onconnect>1</onconnect>
+        <text>Bem-vindo a Fernando de Noronha. O paraiso tropical virou um pesadelo. Proteja-se do sol e encontre agua doce rapidamente.</text>
+    </message>
+
+    <message>
+        <repeat>35</repeat>
+        <text>[TRANSMISSAO DE RADIO] Sobreviventes: O antigo Destacamento da Aeronautica no morro ainda possui suprimentos, mas atrai muitos infectados. Cuidado.</text>
+    </message>
+
+    <message>
+        <repeat>50</repeat>
+        <text>[DICA DE SOBREVIVENCIA] Vasculhe as antigas pousadas de luxo na Vila dos Remedios e no Porto para encontrar roupas leves e comida enlatada.</text>
+    </message>
+
+    <message>
+        <deadline>240</deadline>
+        <shutdown>1</shutdown>
+        <text>[ALERTA METEOROLOGICO] Uma violenta tempestade tropical varrera a ilha em #tmin minutos. Busquem abrigo seguro! (O servidor sera reiniciado)</text>
+    </message>
+
+</messages>

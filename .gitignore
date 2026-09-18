@@ -1,0 +1,37 @@
+# DayZ build artifacts
+*.pbo
+*.bisign
+*.bikey
+/build/
+/addon/config.bin
+
+# Local path configuration and runtime state
+/config.local.ps1
+/.runtime/
+/profiles/
+/logs/
+*.RPT
+script_*.log
+crash_*.log
+
+# Export sessions and screenshots
+map-exports/
+captures/
+output/
+*.dds
+
+# Mission runtime/generated state
+/mission/**/storage_-1/
+/mission/**/areaflags.map
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDE and OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
