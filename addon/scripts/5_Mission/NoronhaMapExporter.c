@@ -74,8 +74,8 @@ class DayZMapCaptureAck
 
 class NoronhaMapExporter
 {
-	protected const string LAYOUT_PATH = "NoronhaMapExporter/gui/layouts/noronha_map_exporter.layout";
-	protected const string LOG_PREFIX = "[NoronhaMapExporter] ";
+	protected const string LAYOUT_PATH = "DayZMapExporter/gui/layouts/noronha_map_exporter.layout";
+	protected const string LOG_PREFIX = "[DayZMapExporter] ";
 	protected const float CONSISTENCY_TOLERANCE = 0.01;
 	protected const float SQUARE_PIXEL_TOLERANCE = 0.001;
 	protected const int AUTO_STATE_IDLE = 0;

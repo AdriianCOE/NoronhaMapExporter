@@ -1,6 +1,6 @@
 # Product examples
 
-These are compact JPEG viewport samples from the validated Noronha development terrain. They are documentation only, not reusable terrain data, source captures, or full-world masters.
+These are compact JPEG viewport samples from a custom development terrain. They are documentation only, not reusable terrain data, source captures, or full-world masters.
 
 | File | Demonstrates |
 | --- | --- |

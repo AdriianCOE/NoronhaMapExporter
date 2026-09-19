@@ -1,9 +1,14 @@
-# Offline mission
+# Export mission
 
-DayZMapExporter does not distribute DayZ missions, economy files, map groups,
-terrain data, or runtime persistence. Configure the absolute path to a
-compatible offline mission in `config.json` under `paths.mission`.
+DayZMapExporter needs an offline mission for the target world. Create the
+included minimal exporter mission with:
 
-The mission must load the target terrain and any terrain-required dependencies.
-Keep its `storage_-1/`, generated map artifacts, logs, and other runtime state
-outside this repository.
+```powershell
+.\scripts\create-mission.ps1 -ConfigPath .\config.json
+```
+
+For `world.name = "MyTerrain"`, this creates `mission/dayzOffline.MyTerrain`.
+
+The template contains only project-authored startup source. Some custom
+terrains require additional mission files or mods; use the terrain-provided
+mission when required.

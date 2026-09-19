@@ -1,6 +1,6 @@
 class CfgPatches
 {
-	class NoronhaMapExporter
+	class DayZMapExporter
 	{
 		units[] = {};
 		weapons[] = {};
@@ -198,19 +198,19 @@ class RscMapControl: RscMapControlStyleActive
 
 class CfgMods
 {
-	class NoronhaMapExporter
+	class DayZMapExporter
 	{
 		type = "mod";
-		dir = "NoronhaMapExporter";
-		name = "Noronha Map Exporter (Development)";
-		author = "Noronha";
+		dir = "DayZMapExporter";
+		name = "DayZ Map Exporter";
+		author = "DayZMapExporter contributors";
 		version = "0.1.0-dev";
 		class defs
 		{
 			class missionScriptModule
 			{
 				value = "";
-				files[] = { "NoronhaMapExporter/scripts/5_Mission" };
+				files[] = { "DayZMapExporter/scripts/5_Mission" };
 			};
 		};
 	};

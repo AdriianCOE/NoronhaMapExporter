@@ -1,6 +1,6 @@
-name = "NoronhaMapExporter";
-author = "Noronha";
+name = "DayZMapExporter";
+author = "DayZMapExporter contributors";
 version = "0.1.0-dev";
-overview = "Development-only fullscreen MapWidget calibration tool for Noronha.";
-tooltip = "Noronha Map Exporter (Development)";
+overview = "Fullscreen MapWidget exporter for reproducible map captures.";
+tooltip = "DayZ Map Exporter";
 action = "";

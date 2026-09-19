@@ -1,4 +1,4 @@
-# Noronha Map Exporter stitcher
+# DayZMapExporter stitcher
 
 This is the offline half of the exporter. It consumes the `manifest.json`
 created by the DayZ prototype and clean screenshots manually placed in the
@@ -12,7 +12,7 @@ image-feature matching.
    the real `ScreenToMap` viewport; the current 1920×1080 calibration should
    be 3×5 (15 tiles), but this is intentionally not hardcoded.
 3. Keep `F7` in CLEAN mode, wait for `CAPTURE READY`, take one unmodified full
-   game screenshot, save it as the printed `noronha_xNN_zNN.png`, then press
+   game screenshot, save it as the printed `map_xNN_zNN.png`, then press
    `N`. Use `B` to return to a tile. `P` reprints the active tile metadata.
 4. When the last tile is confirmed, copy/rename the images into the printed
    session directory under `captures/`. The game wrote `manifest.json` there.
@@ -32,7 +32,7 @@ python .\stitch_map.py "<session-directory-printed-by-DayZ>"
 The helper rejects incomplete captures, mismatched widget sizes, non-square
 pixels, inconsistent Z orientation, missing grid cells, invalid coverage, and
 uncovered output pixels. It uses real tile bounds to position screenshots,
-then splits known adjacent overlaps at their midpoint. `0..10240` is cropped
+then splits known adjacent overlaps at their midpoint. The configured world is cropped
 only after the geometric canvas is complete.
 
 Outputs:

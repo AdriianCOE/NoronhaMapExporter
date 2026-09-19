@@ -4,14 +4,14 @@
     "dayzTools": "C:/Path/To/DayZ Tools",
     "ragDayZTools": "C:/Path/To/RaG-DayZ-Tools",
     "python": "python",
-    "terrainMod": "D:/DayZMods/@MyTerrain",
+    "terrainMod": "D:/DayZMods/@YourTerrain",
     "additionalMods": [],
-    "mission": "C:/Path/To/dayzOffline.MyTerrain",
+    "mission": "./mission/dayzOffline.YourWorld",
     "profiles": "./.runtime/profiles",
     "output": "./output"
   },
   "world": {
-    "name": "MyTerrain",
+    "name": "YourWorld",
     "size": 10240
   },
   "capture": {
@@ -37,11 +37,11 @@
   },
   "satmap": {
     "mode": "source",
-    "source": "C:/Path/To/satmap.png"
+    "source": "C:/Path/To/YourSatmap.png"
   },
   "hillshade": {
     "enabled": false,
-    "heightmap": "",
+    "heightmap": "C:/Path/To/YourHeightmap.asc",
     "mode": "multidirectional-slope-weighted",
     "opacity": 0.225,
     "seaLevel": -2,

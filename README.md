@@ -1,108 +1,98 @@
 # DayZMapExporter
 
-DayZMapExporter turns DayZ's native `MapWidget` into reproducible, georeferenced map exports. It captures tiles through the game client, acknowledges every lossless PNG, and stitches them from recorded world bounds.
-
-The user-facing workflow has two commands:
-
-```powershell
-.\run-2d.ps1       # native 2D overview/detail exports
-.\run-satmap.ps1   # optional source satellite layer
-```
-
-There are no public style presets. One `config.json` controls the engine properties that are safe to change: grid, location labels/icons, vegetation, contours, roads, tracks, buildings, and palette/opacity. The example is an engine-clean topographic configuration: clear of UI labels but intentionally rich in terrain character.
+DayZMapExporter exports the native DayZ MapWidget as reproducible, lossless,
+georeferenced 2D map images. It works with a compatible terrain mod and an
+offline mission for that terrain.
 
 ## Quick start
 
-1. Install DayZ, DayZ Tools, .NET 8 SDK, Python 3, Pillow, and [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools).
-2. Clone this repository and create the only machine-local file:
+1. Install DayZ, DayZ Tools, .NET 8 SDK, Python 3, Pillow, NumPy, and [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools).
+
+2. Create your local configuration:
 
    ```powershell
    Copy-Item .\config.example.json .\config.json
    ```
 
-3. Edit the paths, world name/size, a compatible offline mission, desired export scales, and cartography properties. `config.json`, output, profiles, PBOs, and captures are ignored by Git. The repository does not ship a DayZ mission or terrain data.
-4. Validate without opening DayZ:
+3. Edit `config.json`. The important fields are `paths.dayz`,
+   `paths.dayzTools`, `paths.ragDayZTools`, `paths.terrainMod`, `world.name`,
+   and `world.size`.
+
+4. Create a minimal exporter mission:
+
+   ```powershell
+   .\scripts\create-mission.ps1 -ConfigPath .\config.json
+   ```
+
+   If the terrain needs its own mission or extra files, use the mission it
+   distributes and set `paths.mission` to that folder instead.
+
+5. Validate before opening DayZ:
 
    ```powershell
    .\run-2d.ps1 -ValidateOnly
-   .\run-satmap.ps1 -ValidateOnly   # only when satmap.mode is "source"
    ```
 
-5. Run `run-2d.ps1`. For each enabled export it builds the addon and helper, opens DayZDiag, and tells you when to enter the offline mission and press `Ctrl+F8`, then `F8` once. Do not press `F5`; it is a development smoke shortcut, not the product workflow.
-6. When each automatic export completes, return to the console and press Enter. The command geometrically stitches the captures and writes:
+6. Export:
 
-   ```text
-   output/<world>/2d/overview.png
-   output/<world>/2d/detail.png
-   output/<world>/2d/previews/*.jpg
-   output/<world>/2d/manifest.json
-   output/<world>/logs/
+   ```powershell
+   .\run-2d.ps1
    ```
 
-The manifest records full output paths, source sessions, scale, metres-per-pixel, hashes, and generated cartography capabilities.
+   Enter the offline mission when DayZDiag opens. Press `Ctrl+F8`, then `F8`
+   once. Return to the console only after the automatic export completes.
 
-## Cartography configuration
+Results are written under:
 
-`config.example.json` is the authoritative template. The essential section is:
-
-```json
-"cartography": {
-  "grid": false,
-  "gridNumbers": false,
-  "locationLabels": false,
-  "locationIcons": false,
-  "vegetation": { "enabled": true, "opacity": 0.75, "color": "#94D96B" },
-  "contours": { "enabled": true, "opacity": 0.65, "color": "#66513F" },
-  "roads": { "enabled": true },
-  "tracks": { "enabled": true },
-  "buildings": { "enabled": true }
-}
+```text
+output/<world>/2d/overview.png
+output/<world>/2d/detail.png
+output/<world>/2d/manifest.json
 ```
 
-`#RRGGBB` and `#RRGGBBAA` colours are supported. MapWidget properties are generated only in an ignored build staging directory, leaving source and terrain data untouched. `mapObjectIcons` is deliberately not a public control: this DayZ build does not safely allow an addon to override the remaining object icons. The run manifest reports that limitation if it is requested.
+## What you need
 
-## Examples
+DayZ, DayZ Tools, Python 3 with Pillow and NumPy, and .NET 8 are needed on the
+machine that performs exports. RaG DayZ Tools is needed by the current command
+because it rebuilds the small exporter addon before each run; it is not a
+runtime dependency of a previously built addon.
 
-| Native reference | Engine-clean topographic |
-| --- | --- |
-| ![Native MapWidget reference](images/examples/raw-map.jpg) | ![Engine-clean topographic viewport](images/examples/engine-clean.jpg) |
+`world.name` is the DayZ world/config name, not the Steam Workshop display
+name. `world.size` is the terrain width in metres: for example, `8192`,
+`10240`, `15360`, or `20480` describe metres, never pixels.
 
-The examples are compact viewport JPEGs only. See [images/examples](images/examples/README.md) for their scope; full-world masters are not stored in the repository.
+See [configuration](docs/CONFIGURATION.md) for every setting.
 
-## Satellite layer
+## Satellite and hillshade
 
-There are two explicit choices:
+`run-satmap.ps1` exports a standalone source raster when `satmap.mode` is
+`source`. It is optional and does not block a 2D export. `satmap.mode: engine`
+uses imagery exposed by the loaded terrain as part of the 2D MapWidget export;
+it can retain native map layers.
 
-- `"satmap": { "mode": "engine" }` uses imagery provided by the loaded terrain in DayZ's MapWidget. It is captured with the 2D export and aligns automatically because the engine owns both layers. It is an engine-composite map: residual native layers may remain.
-- `"satmap": { "mode": "source", "source": "..." }` is an independent source image. `run-satmap.ps1` copies it to a validated lossless PNG and records a hash and declared world extent. It does not invent projection, crop, scale, recolour, or alignment.
+Hillshade is optional. When enabled, provide the authoritative ASC heightmap
+for the terrain. It creates a separate image in `output/<world>/tourist/` and
+never overwrites the 2D master.
 
-Use `source` for a standalone satellite raster. Engine satellite output remains an engine composite and can retain native layers.
+## Known limitations
 
-## Optional hillshade
-
-Set `hillshade.enabled` only when you have the authoritative ASC used to make the terrain. The default `multidirectional-slope-weighted` setting uses terrain slope to keep flats nearly neutral and make steep relief readable; it writes separate `output/<world>/tourist/*_hillshade.png` files. The clean `2d/*.png` master is never overwritten. If no heightmap is configured, the 2D export continues and reports that hillshade was skipped.
-
-## Guarantees and limits
-
-- Capture uses the real DayZ client rectangle and produces RGB lossless PNGs.
-- The helper is ACK/idempotency-aware: a completed request is not recaptured merely because the helper sees it again.
-- Stitching uses recorded bounds and midpoint overlap crops only. It never uses feature matching.
 - DayZ must remain visible, unminimized, and unobstructed during capture.
-- Native object icons resolved through `MapDefaults` can remain baked into a map. This is a known engine limitation, not a silent failure.
-- DayZMapExporter exports what the loaded terrain exposes. It does not build, change, or redistribute terrain/WRP data.
+- Some native object icons can remain because this DayZ build does not safely
+  expose their MapDefaults styling to an addon.
+- The included mission template is deliberately minimal. Some custom terrains
+  require additional mission files or mods.
 
-## Verification
+## Example output
 
-```powershell
-dotnet build .\capture-helper\DayZMapCapture.csproj -c Release
-python -m unittest -v stitcher.test_stitch_map
-.\run-2d.ps1 -ValidateOnly
-```
+These are compact example viewports from a custom terrain, not terrain data or
+full-resolution masters.
 
-The repository keeps only synthetic tests and small product examples. PBOs, profiles, real captures, masters, WRP data, missions, and machine paths stay local.
+| Native MapWidget | Engine-clean topographic |
+| --- | --- |
+| ![Native MapWidget example](images/examples/raw-map.jpg) | ![Engine-clean example](images/examples/engine-clean.jpg) |
 
 ## License
 
-DayZMapExporter source code and documentation in this repository are licensed under the [MIT License](LICENSE). DayZ, terrain data, missions, WRP data, and other third-party assets are not included.
+DayZMapExporter source code and documentation are licensed under the [MIT License](LICENSE). DayZ, missions, terrain data, WRP data, captures, and other third-party assets are not included.
 
-More detail: [capabilities](docs/PRODUCT_CAPABILITIES.md) and [architecture](docs/ARCHITECTURE.md).
+For implementation detail, see [architecture](docs/ARCHITECTURE.md) and [product capabilities](docs/PRODUCT_CAPABILITIES.md).

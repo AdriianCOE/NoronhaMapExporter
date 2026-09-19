@@ -13,7 +13,7 @@ capture request / ACK (automatic) or manual full-frame screenshots
     ↓
 Python geometric stitcher
     ↓
-exact 10240 × 10240 m world crop
+exact configured-world crop
     ↓
 engine master PNG
 ```
@@ -37,5 +37,4 @@ It does not capture DayZ, call render APIs, or compare image features.
 
 The active terrain extent comes from ignored profile configuration. The final
 crop uses those configured limits only after the larger capture canvas is
-complete. The validated Noronha extent was `X=0..10240`, `Z=0..10240` metres;
-it is documentation only.
+complete.

@@ -146,7 +146,7 @@ if ($CartographyOverridePath) {
 if ($CartographyStyle -eq 'public-config' -and -not $publicCartographyOverride) { throw 'public-config requires -CartographyOverridePath.' }
 
 if (-not $OutputDirectory) {
-    $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter-dev\Addons'
+    $OutputDirectory = Join-Path $repoRoot 'build\@DayZMapExporter\Addons'
 }
 
 $packageRoot = Split-Path -Parent $OutputDirectory
@@ -175,7 +175,7 @@ $stageConfigText = $stageConfigText.Replace($locationOverrideMarker, $locationOv
     --output $packageRoot `
     --project-root $repoRoot `
     --temp (Join-Path $repoRoot '.rag-temp') `
-    --pbo-name 'NoronhaMapExporter.pbo' `
+    --pbo-name 'DayZMapExporter.pbo' `
     --no-binarize `
     --no-convert-config `
     --no-sign `
@@ -183,7 +183,7 @@ $stageConfigText = $stageConfigText.Replace($locationOverrideMarker, $locationOv
     --force
 if ($LASTEXITCODE -ne 0) { throw "RaG PBO Builder failed with exit code $LASTEXITCODE" }
 
-$namedPbo = Join-Path $OutputDirectory 'NoronhaMapExporter.pbo'
+$namedPbo = Join-Path $OutputDirectory 'DayZMapExporter.pbo'
 if (-not (Test-Path -LiteralPath $namedPbo)) { throw "Expected RaG PBO output was not created: $namedPbo" }
 Copy-Item -LiteralPath (Join-Path $sourceDirectory 'mod.cpp') -Destination (Join-Path $packageRoot 'mod.cpp') -Force
-Write-Host "Built NoronhaMapExporter style '$CartographyStyle' with RaG PBO Builder in $packageRoot"
+Write-Host "Built DayZMapExporter style '$CartographyStyle' with RaG PBO Builder in $packageRoot"

@@ -95,7 +95,7 @@ $helper = Start-Process dotnet -ArgumentList @($helperDll, '--sessions-root', $s
 $exports = @()
 if ($validation.config.exports.overview.enabled) { $exports += [pscustomobject]@{ Name = 'overview'; Scale = [double]$validation.config.exports.overview.scale } }
 if ($validation.config.exports.detail.enabled) { $exports += [pscustomobject]@{ Name = 'detail'; Scale = [double]$validation.config.exports.detail.scale } }
-$package = Join-Path $PSScriptRoot 'build\@NoronhaMapExporter-dev'
+$package = Join-Path $PSScriptRoot 'build\@DayZMapExporter'
 $mods = @()
 if ($validation.terrainMod) { $mods += $validation.terrainMod }
 $mods += @($validation.config.paths.additionalMods | ForEach-Object { if ($_){ Resolve-ConfiguredPath ([string]$_) $validation.configPath } })

@@ -26,6 +26,7 @@ output/
 *.dds
 
 # Mission runtime/generated state
+/mission/dayzOffline.*/
 /mission/**/storage_-1/
 /mission/**/areaflags.map
 

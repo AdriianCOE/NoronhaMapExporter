@@ -22,7 +22,7 @@ class StitchMapTests(unittest.TestCase):
                 for grid_x in range(2):
                     left, bottom = grid_x * 40.0, grid_z * 40.0
                     right, top = left + 60.0, bottom + 60.0
-                    filename = f"noronha_x{grid_x:02}_z{grid_z:02}.png"
+                    filename = f"map_x{grid_x:02}_z{grid_z:02}.png"
                     Image.new("RGB", (60, 60), colours[(grid_x, grid_z)]).save(captures / filename)
                     tiles.append({
                         "index": len(tiles), "gridX": grid_x, "gridZ": grid_z, "filename": filename,
@@ -54,7 +54,7 @@ class StitchMapTests(unittest.TestCase):
             colours = {0: (220, 10, 10), 1: (10, 20, 220)}
             for grid_z in range(2):
                 bottom, top = grid_z * 40.0, (grid_z * 40.0) + 60.0
-                filename = f"noronha_x00_z{grid_z:02}.png"
+                filename = f"map_x00_z{grid_z:02}.png"
                 Image.new("RGB", (60, 60), colours[grid_z]).save(captures / filename)
                 tiles.append({
                     "index": grid_z, "gridX": 0, "gridZ": grid_z, "filename": filename,
