@@ -34,8 +34,8 @@ class CfgMods
 	{
 		type = "mod";
 		dir = "DayZMapExporter";
-		name = "DayZ Map Exporter";
-		author = "DayZMapExporter contributors";
+		name = "Noronha Map Exporter";
+		author = "NoronhaMapExporter contributors";
 		version = "0.1.0-dev";
 		class defs
 		{

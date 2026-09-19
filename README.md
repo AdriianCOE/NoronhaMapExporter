@@ -1,48 +1,60 @@
-# DayZMapExporter
+# NoronhaMapExporter
 
-DayZMapExporter exports the native DayZ MapWidget as reproducible, lossless,
-georeferenced 2D map images. It works with a compatible terrain mod and an
-offline mission for that terrain.
+Export high-resolution native DayZ maps with lossless capture and geometric stitching.
 
-## Quick start
+I originally built NoronhaMapExporter while developing the Fernando de Noronha terrain for DayZ. I needed a reliable way to export the native in-game map at high resolution, so I built the tool I could not find. It is published because the same problem affects other terrain creators too: despite the name, NoronhaMapExporter is not specific to Noronha.
 
-1. Install DayZ, DayZ Tools, .NET 8 SDK, Python 3, Pillow, NumPy, and [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools).
+## Features
 
-2. Create your local configuration:
+- Renders the native DayZ `MapWidget`, including terrain map data, roads, contours, vegetation, buildings, and location data exposed by the engine.
+- Measures each widget viewport in world space and stitches captures from those recorded bounds rather than image-feature matching.
+- Captures lossless PNGs through a local request/ACK helper and produces exact configured-world crops.
+- Supports compatible custom terrains and locally detected installed DayZ worlds.
+- Keeps satellite source export and hillshade separate from the native 2D master.
 
-   ```powershell
-   Copy-Item .\config.example.json .\config.json
-   ```
+## Quick Start
 
-3. Edit `config.json`. The important fields are `paths.dayz`,
-   `paths.dayzTools`, `paths.ragDayZTools`, `paths.terrainMod`, `world.name`,
-   and `world.size`.
+```powershell
+.\setup.ps1
+.\run-2d.ps1
+```
 
-4. Create a minimal exporter mission:
+`setup.ps1` tries to find DayZ and DayZ Tools, asks for Chernarus, Livonia, or a custom terrain, writes the ignored local `config.json`, creates a minimal offline mission, and runs a preflight check. `run-2d.ps1` builds the addon, opens DayZDiag, and detects a completed capture manifest automatically.
 
-   ```powershell
-   .\scripts\create-mission.ps1 -ConfigPath .\config.json
-   ```
+During an export, enter the offline mission, press `Ctrl+F8`, then `F8`. There is no console Enter step.
 
-   If the terrain needs its own mission or extra files, use the mission it
-   distributes and set `paths.mission` to that folder instead.
+Requirements: DayZ with `DayZDiag_x64.exe`, DayZ Tools, Python 3 with Pillow and NumPy, and the .NET 8 SDK. If Pillow or NumPy is missing, install them explicitly:
 
-5. Validate before opening DayZ:
+```powershell
+python -m pip install -r .\stitcher\requirements.txt
+```
 
-   ```powershell
-   .\run-2d.ps1 -ValidateOnly
-   ```
+## Configuration
 
-6. Export:
+For most custom terrains, edit only `paths.dayz`, `paths.dayzTools`, `paths.terrainMod`, `paths.mission`, `world.name`, and `world.size`. Start with `config.example.json`, then generate the matching mission:
 
-   ```powershell
-   .\run-2d.ps1
-   ```
+```powershell
+Copy-Item .\config.example.json .\config.json
+.\scripts\create-mission.ps1 -ConfigPath .\config.json
+.\setup.ps1 -Check
+```
 
-   Enter the offline mission when DayZDiag opens. Press `Ctrl+F8`, then `F8`
-   once. Return to the console only after the automatic export completes.
+```json
+{
+  "paths": {
+    "terrainMod": "D:/DayZMods/@MyTerrain",
+    "mission": "./mission/dayzOffline.MyTerrain"
+  },
+  "world": {
+    "name": "MyTerrain",
+    "size": 10240
+  }
+}
+```
 
-Results are written under:
+Use `"terrainMod": null` (or `""`) for an installed world; no terrain mod is added to the launch command. `exports` controls overview/detail scales. `cartography` controls the generated public map presentation. `satmap` is needed only for `run-satmap.ps1`, and hillshade is disabled unless explicitly enabled with an authoritative ASC heightmap.
+
+## Output
 
 ```text
 output/<world>/2d/overview.png
@@ -50,49 +62,39 @@ output/<world>/2d/detail.png
 output/<world>/2d/manifest.json
 ```
 
-## What you need
+The manifest records the source session, scale, dimensions, metres per pixel, and hash. Local profiles, capture sessions, generated PBOs, screenshots, masters, and configuration stay out of Git.
 
-DayZ, DayZ Tools, Python 3 with Pillow and NumPy, and .NET 8 are needed on the
-machine that performs exports. RaG DayZ Tools is needed by the current command
-because it rebuilds the small exporter addon before each run; it is not a
-runtime dependency of a previously built addon.
+## Resolution
 
-`world.name` is the DayZ world/config name, not the Steam Workshop display
-name. `world.size` is the terrain width in metres: for example, `8192`,
-`10240`, `15360`, or `20480` describe metres, never pixels.
+Lower `MapWidget` scales cover fewer metres per capture, so the exporter takes more tiles and produces a larger raster. This is native engine rendering, not artificial upscaling; more pixels do not necessarily reveal more map detail.
 
-See [configuration](docs/CONFIGURATION.md) for every setting.
+## Satellite & Hillshade
 
-## Satellite and hillshade
+`run-satmap.ps1` copies an explicit RGB source raster losslessly and records its dimensions and hash. It is optional and never blocks a 2D export.
 
-`run-satmap.ps1` exports a standalone source raster when `satmap.mode` is
-`source`. It is optional and does not block a 2D export. `satmap.mode: engine`
-uses imagery exposed by the loaded terrain as part of the 2D MapWidget export;
-it can retain native map layers.
+Hillshade is optional post-processing. When enabled, it needs an authoritative ASC heightmap and writes a separate tourist image without replacing the clean native 2D master.
 
-Hillshade is optional. When enabled, provide the authoritative ASC heightmap
-for the terrain. It creates a separate image in `output/<world>/tourist/` and
-never overwrites the 2D master.
+## Supported Worlds
 
-## Known limitations
+| World | Config name | Current status | Notes |
+| --- | --- | --- | --- |
+| Fernando de Noronha | user supplied | example custom terrain | original project terrain; not a technical default |
+| Chernarus | `ChernarusPlus` | local package detected | 15360 m; runtime smoke pending |
+| Livonia | `Enoch` | local package detected | 12800 m; requires installed content; runtime smoke pending |
+| Other custom terrains | user supplied | compatible configuration | provide the terrain mod, mission, class name, and width |
 
-- DayZ must remain visible, unminimized, and unobstructed during capture.
-- Some native object icons can remain because this DayZ build does not safely
-  expose their MapDefaults styling to an addon.
-- The included mission template is deliberately minimal. Some custom terrains
-  require additional mission files or mods.
+Other installed worlds may work but are unverified.
 
-## Example output
+## FAQ / Limitations
 
-These are compact example viewports from a custom terrain, not terrain data or
-full-resolution masters.
+**Can I export at a higher resolution?** Yes. Lower `MapWidget` scales produce more captures and a larger raster, but more pixels do not necessarily expose additional engine detail.
 
-| Native MapWidget | Engine-clean topographic |
-| --- | --- |
-| ![Native MapWidget example](images/examples/raw-map.jpg) | ![Engine-clean example](images/examples/engine-clean.jpg) |
+**Does it work on Linux?** The complete capture workflow is currently Windows-only because it depends on DayZDiag, DayZ Tools, and the Windows capture helper. Python offline processing can be cross-platform, but Linux capture is not currently supported. Wine and Proton are untested and unsupported.
+
+**Why is the map not a replacement for terrain source data?** The exporter records what DayZ renders at runtime. It does not regenerate WRP, terrain, satellite, or heightmap data.
+
+For the coordinate and capture boundary, see [the architecture note](docs/ARCHITECTURE.md).
 
 ## License
 
-DayZMapExporter source code and documentation are licensed under the [MIT License](LICENSE). DayZ, missions, terrain data, WRP data, captures, and other third-party assets are not included.
-
-For implementation detail, see [architecture](docs/ARCHITECTURE.md) and [product capabilities](docs/PRODUCT_CAPABILITIES.md).
+MIT. See [LICENSE](LICENSE).

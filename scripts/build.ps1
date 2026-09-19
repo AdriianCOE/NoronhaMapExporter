@@ -29,7 +29,7 @@ if ($CartographyStyle -eq 'public-config' -and -not $CartographyOverridePath) { 
 if ($CartographyOverridePath -and -not (Test-Path -LiteralPath $CartographyOverridePath -PathType Leaf)) { throw "Cartography override was not found: $CartographyOverridePath" }
 if ($LocationOverridePath -and -not (Test-Path -LiteralPath $LocationOverridePath -PathType Leaf)) { throw "Location override was not found: $LocationOverridePath" }
 
-if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repoRoot 'build\@DayZMapExporter\Addons' }
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter\Addons' }
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
 $packageRoot = Split-Path -Parent $OutputDirectory
 $stageSourceDirectory = Join-Path $repoRoot ('.runtime\addon-stage\' + $CartographyStyle + '\addon')
@@ -54,9 +54,9 @@ if ($LASTEXITCODE -ne 0) { throw "CfgConvert binarization failed with exit code 
 if ($LASTEXITCODE -ne 0) { throw "AddonBuilder failed with exit code $LASTEXITCODE" }
 
 $generatedPbo = Join-Path $OutputDirectory 'addon.pbo'
-$namedPbo = Join-Path $OutputDirectory 'DayZMapExporter.pbo'
+$namedPbo = Join-Path $OutputDirectory 'NoronhaMapExporter.pbo'
 if (-not (Test-Path -LiteralPath $generatedPbo -PathType Leaf)) { throw "Expected AddonBuilder output was not created: $generatedPbo" }
 if (Test-Path -LiteralPath $namedPbo -PathType Leaf) { Remove-Item -LiteralPath $namedPbo -Force }
 Move-Item -LiteralPath $generatedPbo -Destination $namedPbo
 Copy-Item -LiteralPath (Join-Path $sourceDirectory 'mod.cpp') -Destination (Join-Path $packageRoot 'mod.cpp') -Force
-Write-Host "Built DayZMapExporter style '$CartographyStyle' with official DayZ Tools in $packageRoot"
+Write-Host "Built NoronhaMapExporter style '$CartographyStyle' with official DayZ Tools in $packageRoot"

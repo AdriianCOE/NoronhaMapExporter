@@ -38,3 +38,11 @@ It does not capture DayZ, call render APIs, or compare image features.
 The active terrain extent comes from ignored profile configuration. The final
 crop uses those configured limits only after the larger capture canvas is
 complete.
+
+## Stable internal identifiers
+
+The public mod and package are named `NoronhaMapExporter`, but the DayZ addon
+prefix, `CfgMods` class, script-config class, and profile session folder retain
+the established `DayZMapExporter` identifier. Those values are coupled to the
+PBO prefix, script path, and capture-helper handshake, so changing them would
+be a runtime migration rather than a public rename.

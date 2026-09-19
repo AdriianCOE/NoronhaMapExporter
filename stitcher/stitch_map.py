@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Geometrically stitch a DayZMapExporter capture session.
+"""Geometrically stitch a NoronhaMapExporter capture session.
 
 This tool deliberately never searches image content for seams.  It places every
 capture using the real MapWidget bounds in manifest.json and splits each known
@@ -310,7 +310,7 @@ def stitch(session: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Geometrically stitch a DayZMapExporter session.")
+    parser = argparse.ArgumentParser(description="Geometrically stitch a NoronhaMapExporter session.")
     parser.add_argument("session", type=Path, help="Directory containing manifest.json and captures/")
     args = parser.parse_args()
     try:

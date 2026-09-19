@@ -11,7 +11,7 @@ internal static class ProgramEntry
         if (args.SequenceEqual(["--self-test"])) return RunSelfTests();
         if (args.Length != 2 || args[0] != "--sessions-root")
         {
-            Console.Error.WriteLine("Usage: DayZMapCapture --sessions-root <profile\\DayZMapExporter\\map-exports> | --self-test");
+            Console.Error.WriteLine("NoronhaMapExporter capture helper\nUsage: DayZMapCapture --sessions-root <profile\\DayZMapExporter\\map-exports> | --self-test");
             return 2;
         }
         var sessionsRoot = Path.GetFullPath(args[1]);

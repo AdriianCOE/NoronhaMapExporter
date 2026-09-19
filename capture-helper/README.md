@@ -1,4 +1,4 @@
-# DayZ Map Capture helper
+# Noronha Map Exporter capture helper
 
 Windows/.NET 8 console helper for the file handshake used by the DayZ addon.
 It polls each session under `--sessions-root` for `capture_request.json`.
@@ -33,3 +33,6 @@ per-request receipt. An existing PNG without that matching receipt is never
 overwritten or silently adopted. Invalid dimensions, missing DayZ window,
 out-of-client widget rectangles, malformed requests, and capture errors
 produce no `OK` ACK.
+
+`DayZMapExporter` in the profile path is a stable internal handshake folder;
+the public addon and package are named `NoronhaMapExporter`.

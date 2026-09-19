@@ -1,4 +1,4 @@
-# DayZMapExporter stitcher
+# NoronhaMapExporter stitcher
 
 This is the offline half of the exporter. It consumes the `manifest.json`
 created by the DayZ prototype and clean screenshots manually placed in the

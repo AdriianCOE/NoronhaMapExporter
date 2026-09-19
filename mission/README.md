@@ -1,6 +1,6 @@
 # Export mission
 
-DayZMapExporter needs an offline mission for the target world. Create the
+NoronhaMapExporter needs an offline mission for the target world. Create the
 included minimal exporter mission with:
 
 ```powershell

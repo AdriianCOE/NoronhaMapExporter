@@ -1,24 +1,16 @@
 {
   "paths": {
-    "dayz": "C:/Path/To/DayZ",
-    "dayzTools": "C:/Path/To/DayZ Tools",
-    "ragDayZTools": "C:/Path/To/RaG-DayZ-Tools",
+    "dayz": "C:/Program Files (x86)/Steam/steamapps/common/DayZ",
+    "dayzTools": "C:/Program Files (x86)/Steam/steamapps/common/DayZ Tools",
     "python": "python",
-    "terrainMod": "D:/DayZMods/@YourTerrain",
+    "terrainMod": "D:/DayZMods/@MyTerrain",
     "additionalMods": [],
-    "mission": "./mission/dayzOffline.YourWorld",
+    "mission": "./mission/dayzOffline.MyTerrain",
     "profiles": "./.runtime/profiles",
     "output": "./output"
   },
-  "world": {
-    "name": "YourWorld",
-    "size": 10240
-  },
-  "capture": {
-    "overlap": 0.1,
-    "stabilizationFrames": 2,
-    "timeoutSeconds": 30
-  },
+  "world": { "name": "MyTerrain", "size": 10240 },
+  "capture": { "overlap": 0.1, "stabilizationFrames": 2, "timeoutSeconds": 30 },
   "exports": {
     "overview": { "enabled": true, "scale": 0.33 },
     "detail": { "enabled": true, "scale": 0.15 }
@@ -35,18 +27,12 @@
     "buildings": { "enabled": true },
     "colors": { "background": "#FFFFFF", "outside": "#D7E8EF", "sea": "#D7E8EF" }
   },
-  "satmap": {
-    "mode": "source",
-    "source": "C:/Path/To/YourSatmap.png"
-  },
+  "satmap": { "mode": "source", "source": "D:/Maps/MyTerrain_satmap.png" },
   "hillshade": {
     "enabled": false,
-    "heightmap": "C:/Path/To/YourHeightmap.asc",
     "mode": "multidirectional-slope-weighted",
-    "opacity": 0.225,
-    "seaLevel": -2,
-    "elevation": 40,
-    "slopeStart": 5,
-    "slopeFull": 30
+    "heightmap": "D:/Maps/MyTerrain_heightmap.asc",
+    "seaLevel": 0,
+    "opacity": 0.5
   }
 }
