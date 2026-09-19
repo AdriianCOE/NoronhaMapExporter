@@ -1,14 +1,9 @@
 # Offline mission
 
-`dayzOffline.Noronha` is copied here as development mission source. It contains
-the small configuration, economy, environment, and startup files needed by the
-exporter smoke workflow.
+DayZMapExporter does not distribute DayZ missions, economy files, map groups,
+terrain data, or runtime persistence. Configure the absolute path to a
+compatible offline mission in `config.json` under `paths.mission`.
 
-The following local/generated items are deliberately excluded:
-
-- `storage_-1/` — DayZ runtime persistence.
-- `areaflags.map` — a 75 MB generated map artifact.
-
-The mission's `config.cpp` currently requires `Noronha_Items`; configure that
-dependency through `AdditionalModPaths` when the compatible terrain build
-requires it. No Noronha terrain or item PBO is included in this repository.
+The mission must load the target terrain and any terrain-required dependencies.
+Keep its `storage_-1/`, generated map artifacts, logs, and other runtime state
+outside this repository.

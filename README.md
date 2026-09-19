@@ -1,6 +1,6 @@
 # DayZMapExporter
 
-DayZMapExporter turns DayZ's native `MapWidget` into reproducible, georeferenced map exports. It captures tiles through the game client, acknowledges every lossless PNG, and stitches them from recorded world bounds. It works with custom terrains and with vanilla worlds when an offline mission is supplied.
+DayZMapExporter turns DayZ's native `MapWidget` into reproducible, georeferenced map exports. It captures tiles through the game client, acknowledges every lossless PNG, and stitches them from recorded world bounds.
 
 The user-facing workflow has two commands:
 
@@ -20,7 +20,7 @@ There are no public style presets. One `config.json` controls the engine propert
    Copy-Item .\config.example.json .\config.json
    ```
 
-3. Edit the paths, world name/size, offline mission, desired export scales, and cartography properties. `config.json`, output, profiles, PBOs, and captures are ignored by Git.
+3. Edit the paths, world name/size, a compatible offline mission, desired export scales, and cartography properties. `config.json`, output, profiles, PBOs, and captures are ignored by Git. The repository does not ship a DayZ mission or terrain data.
 4. Validate without opening DayZ:
 
    ```powershell
@@ -76,7 +76,7 @@ There are two explicit choices:
 - `"satmap": { "mode": "engine" }` uses imagery provided by the loaded terrain in DayZ's MapWidget. It is captured with the 2D export and aligns automatically because the engine owns both layers. It is an engine-composite map: residual native layers may remain.
 - `"satmap": { "mode": "source", "source": "..." }` is an independent source image. `run-satmap.ps1` copies it to a validated lossless PNG and records a hash and declared world extent. It does not invent projection, crop, scale, recolour, or alignment.
 
-Use `source` for a standalone satellite raster. See [docs/SATELLITE_AUDIT.md](docs/SATELLITE_AUDIT.md) for runtime evidence and the integration boundary.
+Use `source` for a standalone satellite raster. Engine satellite output remains an engine composite and can retain native layers.
 
 ## Optional hillshade
 
@@ -99,6 +99,10 @@ python -m unittest -v stitcher.test_stitch_map
 .\run-2d.ps1 -ValidateOnly
 ```
 
-The repository keeps only synthetic tests and small product examples. PBOs, profiles, real captures, masters, WRP data, and machine paths stay local.
+The repository keeps only synthetic tests and small product examples. PBOs, profiles, real captures, masters, WRP data, missions, and machine paths stay local.
 
-More detail: [capabilities](docs/PRODUCT_CAPABILITIES.md), [architecture](docs/ARCHITECTURE.md), and [current validated baseline](docs/CURRENT_STATE.md).
+## License
+
+DayZMapExporter source code and documentation in this repository are licensed under the [MIT License](LICENSE). DayZ, terrain data, missions, WRP data, and other third-party assets are not included.
+
+More detail: [capabilities](docs/PRODUCT_CAPABILITIES.md) and [architecture](docs/ARCHITECTURE.md).

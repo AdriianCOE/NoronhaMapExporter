@@ -5,7 +5,6 @@ These are compact JPEG viewport samples from the validated Noronha development t
 | File | Demonstrates |
 | --- | --- |
 | `raw-map.jpg` | native MapWidget reference |
-| `grid-off.jpg` | grid and coordinate numbers disabled |
 | `engine-clean.jpg` | the public property-based clean/topographic direction |
 | `satellite-engine.jpg` | terrain-provided satellite imagery rendered by the engine |
 

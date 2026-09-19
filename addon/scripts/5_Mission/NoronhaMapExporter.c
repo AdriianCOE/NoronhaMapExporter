@@ -361,7 +361,7 @@ class NoronhaMapExporter
 	{
 		if (!FileExist(CONFIG_PATH))
 		{
-			Print(LOG_PREFIX + "ERROR: missing " + CONFIG_PATH + ". Copy exporter-config.example.json into the profile before opening the exporter.");
+			Print(LOG_PREFIX + "ERROR: missing " + CONFIG_PATH + ". Run run-2d.ps1 so it can generate the profile configuration.");
 			return false;
 		}
 		m_Config = new DayZMapExporterConfig();

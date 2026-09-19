@@ -65,7 +65,7 @@ else {
     $satmap = $config.satmap
     if ($null -eq $satmap) { Fail 'satmap is required.' }
     $modeValue = if ($satmap.mode) { [string]$satmap.mode } else { 'source' }
-    if ($modeValue -ne 'source') { Fail "satmap.mode '$modeValue' is not supported yet. Use 'source'." }
+    if ($modeValue -ne 'source') { Fail "run-satmap.ps1 accepts satmap.mode 'source' only. Use run-2d.ps1 for the engine composite." }
     $source = Require-Property $satmap 'source' 'satmap'
     $source = Resolve-ConfigPath $source $configDirectory
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { Fail "satmap.source was not found at: $source" }

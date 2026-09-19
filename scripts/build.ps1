@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
 if ((-not $RaGDayZToolsPath) -and -not (Test-Path -LiteralPath $ConfigPath)) {
-    throw "Missing local configuration: $ConfigPath. Copy config.example.ps1 to config.local.ps1 and set DayZToolsPath."
+    throw "RaGDayZToolsPath is required. Pass it directly or use run-2d.ps1 with config.json."
 }
 
 if (-not $RaGDayZToolsPath -and (Test-Path -LiteralPath $ConfigPath)) { . $ConfigPath }
