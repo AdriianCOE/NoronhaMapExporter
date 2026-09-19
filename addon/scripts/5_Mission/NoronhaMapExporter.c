@@ -256,6 +256,7 @@ class NoronhaMapExporter
 		switch (key)
 		{
 			case KeyCode.KC_ESCAPE: Close(); break;
+			case KeyCode.KC_F3: LogCartographyConfigAudit(); break;
 			case KeyCode.KC_F6: StartFullExport(); break;
 			case KeyCode.KC_F4: StartDetailAudit(); break;
 			case KeyCode.KC_F8: StartAutomaticExport(false); break;
@@ -1048,6 +1049,93 @@ class NoronhaMapExporter
 	{
 		if (value) return "true";
 		return "false";
+	}
+
+	// This is an audit-only diagnostic. DayZ keeps MapDefaults in its runtime
+	// configuration, so the actual class tree must be observed in the running
+	// client before an export-only override can be considered safe.
+	protected void LogCartographyConfigAudit()
+	{
+		Print(LOG_PREFIX + "CARTOGRAPHY_CONFIG_AUDIT BEGIN");
+		LogConfigClass("CfgLocationTypes", 64);
+		LogConfigClass("CfgLocationTypes Name", 0);
+		LogConfigClass("CfgLocationTypes NameIcon", 0);
+		LogConfigClass("CfgLocationTypes Capital", 0);
+		LogConfigClass("CfgLocationTypes City", 0);
+		LogConfigClass("CfgLocationTypes Village", 0);
+		LogConfigClass("CfgLocationTypes Local", 0);
+		LogConfigClass("CfgLocationTypes Marine", 0);
+		LogConfigClass("CfgLocationTypes Ruin", 0);
+		LogConfigClass("CfgLocationTypes Camp", 0);
+		LogConfigClass("CfgLocationTypes Hill", 0);
+		LogConfigClass("CfgLocationTypes ViewPoint", 0);
+		LogConfigClass("CfgLocationTypes RockArea", 0);
+		LogConfigClass("CfgLocationTypes RailroadStation", 0);
+		LogConfigClass("CfgLocationTypes IndustrialSite", 0);
+		LogConfigClass("CfgLocationTypes LocalOffice", 0);
+		LogConfigClass("CfgLocationTypes BorderCrossing", 0);
+		LogConfigClass("CfgLocationTypes VegetationBroadleaf", 0);
+		LogConfigClass("CfgLocationTypes VegetationFir", 0);
+		LogConfigClass("CfgLocationTypes VegetationPalm", 0);
+		LogConfigClass("CfgLocationTypes VegetationVineyard", 0);
+		LogConfigClass("MapDefaults", 96);
+		LogConfigClass("RscMapControl", 96);
+
+		array<string> mapObjectCandidates = new array<string>();
+		mapObjectCandidates.Insert("Fuelstation");
+		mapObjectCandidates.Insert("Lighthouse");
+		mapObjectCandidates.Insert("Stack");
+		mapObjectCandidates.Insert("Transmitter");
+		mapObjectCandidates.Insert("Watertower");
+		mapObjectCandidates.Insert("Shipwreck");
+		mapObjectCandidates.Insert("Monument");
+		mapObjectCandidates.Insert("BusStop");
+		mapObjectCandidates.Insert("Hospital");
+		mapObjectCandidates.Insert("Church");
+		mapObjectCandidates.Insert("Chapel");
+		mapObjectCandidates.Insert("Cross");
+		mapObjectCandidates.Insert("Fortress");
+		mapObjectCandidates.Insert("Fountain");
+		mapObjectCandidates.Insert("Tourism");
+		mapObjectCandidates.Insert("ViewTower");
+		for (int candidateIndex = 0; candidateIndex < mapObjectCandidates.Count(); candidateIndex++)
+		{
+			string candidate = mapObjectCandidates.Get(candidateIndex);
+			LogConfigClass("MapDefaults " + candidate, 0);
+			LogConfigClass("RscMapControl " + candidate, 0);
+		}
+		Print(LOG_PREFIX + "CARTOGRAPHY_CONFIG_AUDIT END");
+	}
+
+	protected void LogConfigClass(string path, int maxChildren)
+	{
+		bool exists = g_Game.ConfigIsExisting(path);
+		Print(LOG_PREFIX + "CONFIG path=" + path + " exists=" + BoolJson(exists));
+		if (!exists) return;
+
+		string baseName;
+		if (g_Game.ConfigGetBaseName(path, baseName)) Print(LOG_PREFIX + "CONFIG base path=" + path + " value=" + baseName);
+		int childCount = g_Game.ConfigGetChildrenCount(path);
+		Print(LOG_PREFIX + "CONFIG children path=" + path + " count=" + childCount);
+		int childLimit = Math.Min(childCount, maxChildren);
+		for (int childIndex = 0; childIndex < childLimit; childIndex++)
+		{
+			string childName;
+			if (g_Game.ConfigGetChildName(path, childIndex, childName)) Print(LOG_PREFIX + "CONFIG child path=" + path + " name=" + childName);
+		}
+
+		string drawStyle;
+		if (g_Game.ConfigGetText(path + " drawStyle", drawStyle)) Print(LOG_PREFIX + "CONFIG drawStyle path=" + path + " value=" + drawStyle);
+		string icon;
+		if (g_Game.ConfigGetText(path + " icon", icon)) Print(LOG_PREFIX + "CONFIG icon path=" + path + " value=" + icon);
+		string texture;
+		if (g_Game.ConfigGetText(path + " texture", texture)) Print(LOG_PREFIX + "CONFIG texture path=" + path + " value=" + texture);
+		int sizeType = g_Game.ConfigGetType(path + " size");
+		int textSizeType = g_Game.ConfigGetType(path + " textSize");
+		int importanceType = g_Game.ConfigGetType(path + " importance");
+		if (sizeType != 0) Print(LOG_PREFIX + "CONFIG size path=" + path + " value=" + g_Game.ConfigGetFloat(path + " size"));
+		if (textSizeType != 0) Print(LOG_PREFIX + "CONFIG textSize path=" + path + " value=" + g_Game.ConfigGetFloat(path + " textSize"));
+		if (importanceType != 0) Print(LOG_PREFIX + "CONFIG importance path=" + path + " value=" + g_Game.ConfigGetFloat(path + " importance"));
 	}
 
 	protected void ShowHud(bool visible)

@@ -66,6 +66,21 @@ native PNGs, `comparison_all.png`, `raw_vs_clean_v1.png`, and `audit.json`.
 See [CLEAN_CARTOGRAPHY_AUDIT.md](CLEAN_CARTOGRAPHY_AUDIT.md) for hashes,
 request IDs, bounds, and the reproducible build command.
 
+## Location / Map-Icon Follow-up (2026-09-19)
+
+Status: completed investigation; `CombinedV2` intentionally not created.
+
+The exact client accepted isolated `CfgLocationTypes` overrides for place
+names and `NameIcon` descendants. Both were automatically captured at the
+urban audit center, with matching ACKs and preserved roads/building
+footprints. Map-object icon classes do exist in `MapDefaults`, but their
+effective `icon` paths cannot be safely overridden by this addon: derived
+`RscMapControl` children are ignored, reopening `MapDefaults` is a DayZ
+compile error, and the explicit inherited-child syntax fails this PC's
+`CfgConvert`. The active development build was restored to `CombinedV1` and
+passes `CfgConvert`; no V2 preview, clean master, WRP, terrain, or RAW master
+was changed.
+
 | Item | Validated baseline |
 | --- | --- |
 | Runtime | DayZDiag with `dayzOffline.Noronha` |

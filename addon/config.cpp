@@ -5,7 +5,7 @@ class CfgPatches
 		units[] = {};
 		weapons[] = {};
 		requiredVersion = 0.1;
-		requiredAddons[] = { "DZ_Data" };
+		requiredAddons[] = { "DZ_Data", "DZ_Gear_Navigation" };
 	};
 };
 
@@ -15,6 +15,11 @@ class CfgPatches
 // deliberately small runtime candidates, captured one at a time by the clean
 // cartography audit.  Raw remains an empty MapDefaults-derived control.
 class MapDefaults;
+
+// The build script replaces this marker only in its ignored staging directory.
+// Keeping the committed source empty makes a normal/raw build neutral.
+// CLEAN_LOCATION_OVERRIDE_PLACEHOLDER
+
 class RscMapControlRaw: MapDefaults
 {
 };

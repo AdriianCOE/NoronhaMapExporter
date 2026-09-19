@@ -33,6 +33,11 @@ EXPECTED_CAPTURE_NAMES = {
     "10-combined-v1": "clean_test_10_combined_v1.png",
     "v1-detail-015": "clean_test_v1_detail_015.png",
     "v1-overview-033": "clean_test_v1_overview_033.png",
+    "20-no-location-text": "clean_test_20_no_location_text.png",
+    "21-no-location-icons": "clean_test_21_no_location_icons.png",
+    "22-no-map-object-icons": "clean_test_22_no_map_object_icons.png",
+    "30-combined-v2-detail-015": "clean_test_30_combined_v2_detail_015.png",
+    "30-combined-v2-overview-033": "clean_test_30_combined_v2_overview_033.png",
 }
 CATEGORY_ORDER = list(EXPECTED_CAPTURE_NAMES)
 
@@ -169,6 +174,7 @@ def main() -> int:
     parser.add_argument("--capture", choices=CATEGORY_ORDER, required=True, help="named audit capture to collect")
     parser.add_argument("--scale", type=float, required=True, help="expected MapWidget scale in this session")
     parser.add_argument("--audit-dir", type=Path, required=True, help="clean-cartography-audit output directory")
+    parser.add_argument("--report-name", default="audit.json", help="JSON report filename within --audit-dir")
     parser.add_argument("--reference-root", type=Path, help="immutable RAW reference root containing masters.json")
     parser.add_argument("--replace", action="store_true", help="replace the named audit capture after validating it")
     args = parser.parse_args()
@@ -180,7 +186,7 @@ def main() -> int:
     tile = matching_tile(manifest, args.scale)
     source, image, digest = validated_png(session, tile)
     audit_dir.mkdir(parents=True, exist_ok=True)
-    report_path = audit_dir / "audit.json"
+    report_path = audit_dir / args.report_name
     report = load_report(report_path)
     captures = report.setdefault("captures", {})
     destination_name = EXPECTED_CAPTURE_NAMES[args.capture]

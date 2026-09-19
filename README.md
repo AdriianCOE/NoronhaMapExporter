@@ -80,9 +80,10 @@ For the isolated cartography audit, the build can stage a named
 ```
 
 The available candidates are `raw`, `no-grid`, `no-labels`, `no-icons`,
-`reduced-vegetation`, `soft-contours`, `palette`, and `combined-v1`. DayZ
-binds this control when the MapWidget is created, so use a fresh client launch
-between candidates. The validated results and limitations are in
+`reduced-vegetation`, `soft-contours`, `palette`, `combined-v1`,
+`no-location-text`, and `no-location-icons`. DayZ binds this control when the
+MapWidget is created, so use a fresh client launch between candidates. The
+validated results and limitations are in
 [docs/CLEAN_CARTOGRAPHY_AUDIT.md](docs/CLEAN_CARTOGRAPHY_AUDIT.md).
 
 ## Automatic capture and stitch

@@ -37,6 +37,45 @@ an Arma-family configuration name.
 features need a separately evidenced DayZ-specific control path before any
 future clean master is made.
 
+## Location and map-icon follow-up (2026-09-19)
+
+The follow-up used the same automatic detail-audit center and preserved the
+immutable RAW references. The local `gear_navigation.pbo` configuration and
+the live client both confirm these location paths:
+
+- Text: `Name`, `NameMarine`, `NameCityCapital`, `NameCity`, `NameVillage`,
+  `NameLocal`, `Capital`, `City`, `Village`, `Local`, and `Marine`.
+- Icon descendants of `NameIcon`: `Ruin`, `Camp`, `Hill`, `ViewPoint`,
+  `RockArea`, `RailroadStation`, `IndustrialSite`, `LocalOffice`,
+  `BorderCrossing`, `VegetationBroadleaf`, `VegetationFir`,
+  `VegetationPalm`, and `VegetationVineyard`.
+
+Both controls are runtime-validated and preserve building footprints/roads:
+
+| Capture | Session / request | Result | SHA-256 |
+| --- | --- | --- | --- |
+| `clean_test_20_no_location_text.png` | `90919052548-1` / 1 | Passed: native location text disappeared. | `addf2134e18b76995577d01184432b5050b785f396db9fa9958c35b7738b28f7` |
+| `clean_test_21_no_location_icons.png` | `90919053029-1` / 1 | Passed: `NameIcon` descendants disappeared. | `323bb83cae8f4234ac5721109916be9edc23aa40dc28f403d5859791814733fb` |
+
+The client also confirms that map-object classes such as `Fuelstation`,
+`Lighthouse`, `Hospital`, `Church`, `Transmitter`, and `ViewTower` exist under
+`MapDefaults` and expose `icon` paths. However, they cannot safely be
+overridden through this addon on this client:
+
+1. A nested candidate under the derived `RscMapControl` left the effective
+   runtime `icon` paths unchanged (for example Hospital remained
+   `\\dz\\gear\\navigation\\data\\map_hospital_ca.paa`).
+2. Reopening global `MapDefaults` stops DayZ compilation with
+   `MapDefaults: Member already defined`.
+3. An explicit inherited-child probe (`class Hospital: Hospital`) is rejected
+   by this PC's `CfgConvert` as `Undefined base class 'Hospital'`.
+
+Consequently `clean_test_22_no_map_object_icons.png` is retained only as a
+rejected diagnostic capture in the ignored runtime package; it is not a
+passing result. No `CombinedV2`, no V2 overview/detail preview, and no full
+clean master were generated. `CombinedV1` remains the selected, reproducible
+renderer baseline.
+
 ## Selected preview captures
 
 Both selected previews came from automatic session `90919050621-2`, with

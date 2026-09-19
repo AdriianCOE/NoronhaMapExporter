@@ -2,7 +2,7 @@
 param(
     [string]$ConfigPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'config.local.ps1'),
     [string]$OutputDirectory,
-    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1')]
+    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1', 'no-location-text', 'no-location-icons')]
     [string]$CartographyStyle = 'raw'
 )
 
@@ -29,8 +29,49 @@ $styleParents = @{
     'soft-contours' = 'RscMapControlSoftContours'
     'palette' = 'RscMapControlPalette'
     'combined-v1' = 'RscMapControlCombinedV1'
+    'no-location-text' = 'RscMapControlCombinedV1'
+    'no-location-icons' = 'RscMapControlCombinedV1'
 }
 $styleParent = $styleParents[$CartographyStyle]
+$locationOverrideMarker = '// CLEAN_LOCATION_OVERRIDE_PLACEHOLDER'
+$locationOverrides = @{
+    'no-location-text' = @'
+class CfgLocationTypes
+{
+	class Name { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameMarine { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameCityCapital { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameCity { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameVillage { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameLocal { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Capital { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class City { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Village { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Local { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Marine { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+};
+'@
+    'no-location-icons' = @'
+class CfgLocationTypes
+{
+	class Ruin { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class Camp { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class Hill { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class ViewPoint { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class RockArea { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class RailroadStation { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class IndustrialSite { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class LocalOffice { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class BorderCrossing { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationBroadleaf { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationFir { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationPalm { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationVineyard { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+};
+'@
+}
+$locationOverride = $locationOverrides[$CartographyStyle]
+if (-not $locationOverride) { $locationOverride = '' }
 
 if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter-dev\Addons'
@@ -51,7 +92,9 @@ $rawActiveClass = 'class RscMapControlStyleActive: RscMapControlRaw'
 $selectedActiveClass = 'class RscMapControlStyleActive: ' + $styleParent
 $stageConfigText = [System.IO.File]::ReadAllText($stageConfig)
 if ($stageConfigText.IndexOf($rawActiveClass, [System.StringComparison]::Ordinal) -lt 0) { throw "Raw RscMapControl selector was not found in $stageConfig" }
-[System.IO.File]::WriteAllText($stageConfig, $stageConfigText.Replace($rawActiveClass, $selectedActiveClass))
+if ($stageConfigText.IndexOf($locationOverrideMarker, [System.StringComparison]::Ordinal) -lt 0) { throw "Location override marker was not found in $stageConfig" }
+$stageConfigText = $stageConfigText.Replace($rawActiveClass, $selectedActiveClass)
+[System.IO.File]::WriteAllText($stageConfig, $stageConfigText.Replace($locationOverrideMarker, $locationOverride))
 
 & $PythonPath $ragBuilder build `
     --source $stageSourceDirectory `
