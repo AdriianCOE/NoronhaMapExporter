@@ -117,6 +117,40 @@ class RscMapControlCombinedV1: RscMapControlPalette
 	colorMainCountlines[] = {0.25, 0.25, 0.25, 0.30};
 };
 
+// Audit candidates for a terrain-rich engine-clean style. They retain the
+// CombinedV1 hierarchy but restore useful vegetation mass and readable
+// contours. Location text and NameIcon removal is injected only by the
+// matching staged build variant.
+class RscMapControlEngineCleanDetailAudit: RscMapControlCombinedV1
+{
+	// Calibrated against the runtime RAW forest fill (warm, living green),
+	// while retaining the engine-clean detail hierarchy.
+	colorForest[] = {0.68, 0.94, 0.42, 0.60};
+	colorForestBorder[] = {0.50, 0.76, 0.24, 0.46};
+	colorCountlines[] = {0.40, 0.33, 0.27, 0.42};
+	colorMainCountlines[] = {0.30, 0.24, 0.20, 0.60};
+};
+
+class RscMapControlEngineCleanOverviewAudit: RscMapControlCombinedV1
+{
+	// At overview scale, a deeper green prevents the forest mass from washing
+	// out when the full-world mosaic is reduced.
+	colorForest[] = {0.58, 0.85, 0.34, 0.74};
+	colorForestBorder[] = {0.42, 0.66, 0.20, 0.60};
+	colorCountlines[] = {0.40, 0.33, 0.27, 0.50};
+	colorMainCountlines[] = {0.30, 0.24, 0.20, 0.68};
+};
+
+// Frozen runtime-approved presets. Their separate hierarchy preserves
+// terrain character at each export scale without altering terrain data.
+class RscMapControlEngineCleanDetail: RscMapControlEngineCleanDetailAudit
+{
+};
+
+class RscMapControlEngineCleanOverview: RscMapControlEngineCleanOverviewAudit
+{
+};
+
 // The build script replaces only this base class in its ignored staged copy.
 // Keep the committed source on Raw so a normal build remains the reference.
 class RscMapControlStyleActive: RscMapControlRaw

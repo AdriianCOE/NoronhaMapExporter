@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze validated raw masters outside Git and compare their native world crops."""
+"""Freeze validated renderer masters outside Git and compare native world crops."""
 
 from __future__ import annotations
 
@@ -72,8 +72,22 @@ def uniform_mpp(manifest: dict) -> tuple[float, float, float]:
     mpp_x = {float(tile["metersPerPixel"]["x"]) for tile in tiles}
     mpp_z = {float(tile["metersPerPixel"]["z"]) for tile in tiles}
     if len(scales) != 1 or len(mpp_x) != 1 or len(mpp_z) != 1:
-        raise ValueError("raw master session must have one scale and one MPP")
+        raise ValueError("master session must have one scale and one MPP")
     return scales.pop(), mpp_x.pop(), mpp_z.pop()
+
+
+def reference_base(args: argparse.Namespace) -> Path:
+    """Keep historical RAW references at their established path."""
+    root = args.reference_root.resolve()
+    if args.style == "raw":
+        return root / args.wrp_sha256[:16]
+    return root / args.style / args.wrp_sha256[:16]
+
+
+def master_record(manifest: dict) -> dict:
+    if "engineCleanMaster" in manifest:
+        return manifest["engineCleanMaster"]
+    return manifest["rawMaster"]
 
 
 def freeze(args: argparse.Namespace) -> int:
@@ -83,17 +97,21 @@ def freeze(args: argparse.Namespace) -> int:
     master, preview = master_paths(session)
     with Image.open(master) as image:
         if image.format != "PNG" or image.mode != "RGB":
-            raise ValueError("raw master must be RGB PNG")
+            raise ValueError("master must be RGB PNG")
         width, height = image.size
-    root = args.reference_root.resolve() / args.wrp_sha256[:16] / args.name
-    if root.exists():
-        raise ValueError(f"refusing to overwrite existing immutable reference: {root}")
+    root = reference_base(args) / args.name
     output = root / "output"
     captures = root / "captures"
     logs = root / "logs"
-    output.mkdir(parents=True)
-    captures.mkdir()
-    logs.mkdir()
+    manifest_path = root / "manifest.json"
+    if root.exists() and manifest_path.is_file():
+        raise ValueError(f"refusing to overwrite existing immutable reference: {root}")
+    # A failed attempt never writes its manifest. Resuming that known-incomplete
+    # directory is safe: every capture is verified against its session hash
+    # before it is copied, and the final manifest is written last.
+    output.mkdir(parents=True, exist_ok=True)
+    captures.mkdir(exist_ok=True)
+    logs.mkdir(exist_ok=True)
     for tile in manifest["tiles"]:
         source = session / "captures" / tile["filename"]
         if not source.is_file():
@@ -101,9 +119,9 @@ def freeze(args: argparse.Namespace) -> int:
         if sha256(source) != tile["png"]["sha256"]:
             raise ValueError(f"capture hash mismatch: {source.name}")
         shutil.copy2(source, captures / source.name)
-    raw_name = f"noronha_{args.name}_raw.png"
+    master_name = f"noronha_{args.name}_{args.style.replace('-', '_')}.png"
     preview_name = f"noronha_{args.name}_preview.jpg"
-    shutil.copy2(master, output / raw_name)
+    shutil.copy2(master, output / master_name)
     shutil.copy2(preview, output / preview_name)
     stitch_log = session / "logs" / "stitch.log"
     if stitch_log.is_file():
@@ -117,7 +135,7 @@ def freeze(args: argparse.Namespace) -> int:
             "worldSize": args.world_size,
             "wrpSha256": args.wrp_sha256,
         },
-        "renderer": {"scale": scale},
+        "renderer": {"style": args.style, "scale": scale},
         "capture": {
             "resolution": {"width": manifest["tiles"][0]["png"]["width"], "height": manifest["tiles"][0]["png"]["height"]},
             "overlapFraction": manifest["overlapFraction"],
@@ -125,22 +143,22 @@ def freeze(args: argparse.Namespace) -> int:
             "metersPerPixel": {"x": mpp_x, "z": mpp_z},
             "tiles": manifest["tiles"],
         },
-        "rawMaster": {
-            "path": f"output/{raw_name}",
+        ("rawMaster" if args.style == "raw" else "engineCleanMaster"): {
+            "path": f"output/{master_name}",
             "width": width,
             "height": height,
-            "sha256": sha256(output / raw_name),
+            "sha256": sha256(output / master_name),
         },
         "preview": f"output/{preview_name}",
         "stitching": "geometric world bounds; exact terrain crop; no feature matching",
     }
-    write_json(root / "manifest.json", frozen)
+    write_json(manifest_path, frozen)
     print(root)
     return 0
 
 
 def index(args: argparse.Namespace) -> int:
-    base = args.reference_root.resolve() / args.wrp_sha256[:16]
+    base = reference_base(args)
     destination = base / "masters.json"
     if destination.exists():
         raise ValueError(f"refusing to overwrite existing index: {destination}")
@@ -148,16 +166,16 @@ def index(args: argparse.Namespace) -> int:
     for name in ("overview", "detail"):
         manifest = read_json(base / name / "manifest.json")
         capture = manifest["capture"]
-        raw = manifest["rawMaster"]
+        master = master_record(manifest)
         masters[name] = {
             "scale": manifest["renderer"]["scale"],
-            "width": raw["width"],
-            "height": raw["height"],
+            "width": master["width"],
+            "height": master["height"],
             "metersPerPixel": capture["metersPerPixel"],
             "grid": capture["grid"],
             "tileCount": len(capture["tiles"]),
-            "sha256": raw["sha256"],
-            "path": f"{name}/{raw['path']}",
+            "sha256": master["sha256"],
+            "path": f"{name}/{master['path']}",
         }
     first = read_json(base / "overview" / "manifest.json")["terrain"]
     write_json(destination, {"world": first["world"], "worldSize": first["worldSize"], "wrpSha256": args.wrp_sha256, **masters})
@@ -179,7 +197,7 @@ def crop_world(manifest: dict, path: Path, bounds: tuple[float, float, float, fl
 
 
 def comparison(args: argparse.Namespace) -> int:
-    base = args.reference_root.resolve() / args.wrp_sha256[:16]
+    base = reference_base(args)
     overview = read_json(base / "overview" / "manifest.json")
     detail = read_json(base / "detail" / "manifest.json")
     bounds = tuple(args.bounds)
@@ -190,8 +208,8 @@ def comparison(args: argparse.Namespace) -> int:
     if destination.exists():
         raise ValueError(f"refusing to overwrite existing comparison: {destination}")
     destination.mkdir()
-    overview_master = base / "overview" / overview["rawMaster"]["path"]
-    detail_master = base / "detail" / detail["rawMaster"]["path"]
+    overview_master = base / "overview" / master_record(overview)["path"]
+    detail_master = base / "detail" / master_record(detail)["path"]
     overview_crop = crop_world(overview, overview_master, bounds)
     detail_crop = crop_world(detail, detail_master, bounds)
     overview_crop.save(destination / "overview_same_area_native.png", "PNG")
@@ -220,6 +238,7 @@ def parser() -> argparse.ArgumentParser:
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument("--reference-root", type=Path, required=True)
     shared.add_argument("--wrp-sha256", required=True)
+    shared.add_argument("--style", choices=("raw", "engine-clean"), default="raw")
     freeze_parser = sub.add_parser("freeze", parents=[shared])
     freeze_parser.add_argument("--session", type=Path, required=True)
     freeze_parser.add_argument("--name", choices=("overview", "detail"), required=True)

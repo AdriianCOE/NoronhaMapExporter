@@ -38,6 +38,9 @@ EXPECTED_CAPTURE_NAMES = {
     "22-no-map-object-icons": "clean_test_22_no_map_object_icons.png",
     "30-combined-v2-detail-015": "clean_test_30_combined_v2_detail_015.png",
     "30-combined-v2-overview-033": "clean_test_30_combined_v2_overview_033.png",
+    "40-engine-clean-detail-015": "clean_test_40_engine_clean_detail_015.png",
+    "41-engine-clean-detail-033": "clean_test_41_engine_clean_detail_033.png",
+    "42-engine-clean-overview-033": "clean_test_42_engine_clean_overview_033.png",
 }
 CATEGORY_ORDER = list(EXPECTED_CAPTURE_NAMES)
 

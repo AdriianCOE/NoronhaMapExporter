@@ -2,7 +2,7 @@
 param(
     [string]$ConfigPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'config.local.ps1'),
     [string]$OutputDirectory,
-    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1', 'no-location-text', 'no-location-icons')]
+    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1', 'no-location-text', 'no-location-icons', 'engine-clean-detail-audit', 'engine-clean-overview-audit', 'engine-clean-detail', 'engine-clean-overview')]
     [string]$CartographyStyle = 'raw'
 )
 
@@ -31,6 +31,10 @@ $styleParents = @{
     'combined-v1' = 'RscMapControlCombinedV1'
     'no-location-text' = 'RscMapControlCombinedV1'
     'no-location-icons' = 'RscMapControlCombinedV1'
+    'engine-clean-detail-audit' = 'RscMapControlEngineCleanDetailAudit'
+    'engine-clean-overview-audit' = 'RscMapControlEngineCleanOverviewAudit'
+    'engine-clean-detail' = 'RscMapControlEngineCleanDetail'
+    'engine-clean-overview' = 'RscMapControlEngineCleanOverview'
 }
 $styleParent = $styleParents[$CartographyStyle]
 $locationOverrideMarker = '// CLEAN_LOCATION_OVERRIDE_PLACEHOLDER'
@@ -39,6 +43,14 @@ $locationOverrides = @{
 class CfgLocationTypes
 {
 	class Name { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Mount { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Strategic { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class StrongpointArea { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatArea { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatAreaCity { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatAreaCitySmall { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class CityCenter { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Airport { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
 	class NameMarine { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
 	class NameCityCapital { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
 	class NameCity { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
@@ -70,6 +82,47 @@ class CfgLocationTypes
 };
 '@
 }
+$engineCleanLocationOverride = @'
+class CfgLocationTypes
+{
+	class Name { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Mount { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Strategic { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class StrongpointArea { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatArea { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatAreaCity { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class FlatAreaCitySmall { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class CityCenter { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Airport { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameMarine { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameCityCapital { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameCity { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameVillage { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class NameLocal { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Capital { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class City { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Village { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Local { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Marine { color[] = {0, 0, 0, 0}; textSize = 0; importance = 0; };
+	class Ruin { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class Camp { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class Hill { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class ViewPoint { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class RockArea { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class RailroadStation { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class IndustrialSite { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class LocalOffice { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class BorderCrossing { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationBroadleaf { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationFir { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationPalm { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+	class VegetationVineyard { texture = ""; color[] = {0, 0, 0, 0}; size = 0; textSize = 0; importance = 0; };
+};
+'@
+$locationOverrides['engine-clean-detail-audit'] = $engineCleanLocationOverride
+$locationOverrides['engine-clean-overview-audit'] = $engineCleanLocationOverride
+$locationOverrides['engine-clean-detail'] = $engineCleanLocationOverride
+$locationOverrides['engine-clean-overview'] = $engineCleanLocationOverride
 $locationOverride = $locationOverrides[$CartographyStyle]
 if (-not $locationOverride) { $locationOverride = '' }
 
