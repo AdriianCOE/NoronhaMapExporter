@@ -23,6 +23,33 @@ at 2.34667 m/px; `0.25` = 24 at 1.77778 m/px; `0.20` = 40 at 1.42222 m/px;
 `0.15` = 60 at 1.06667 m/px; `0.10` = 135 at 0.711111 m/px. The audit is a
 decision aid, not a new full-world export or a cartographic style change.
 
+## Dual RAW masters (2026-09-19)
+
+Status: validated and frozen outside Git under an immutable WRP-hash directory.
+
+- [x] deterministic MapWidget export
+- [x] geometric stitching
+- [x] automatic lossless capture
+- [x] Detail Scale Audit
+- [x] overview raw master
+- [x] detail raw master
+
+For the current Noronha WRP (`6d3868ce714052decccac3a95008a527aa4b65bc062b1e45317fc32b548c5ad5`),
+the overview reference is scale `0.33`, `3 x 5`, 15 captures, 4364 x 4364
+pixels at 2.34667 m/px. The detail reference is scale `0.15`, `6 x 10`, 60
+captures, 9600 x 9600 pixels at 1.06667 m/px. Both use only automatic opaque
+RGB PNG capture and geometric world-bounds stitching.
+
+Scale 0.33 is the general/low-zoom cartographic reference. Scale 0.15 is the
+current high-detail Noronha raster baseline, preserving building footprints
+and other features that lower scales do not render as clearly. This is a
+terrain-specific decision based on the audit, not a universal scale rule.
+
+`stitcher/freeze_raw_master.py` copies a validated session into the ignored
+reference store, records terrain/renderer/capture provenance, refuses to
+overwrite a reference, writes `masters.json`, and creates same-world native
+comparison crops. It never changes map styling or uses feature matching.
+
 | Item | Validated baseline |
 | --- | --- |
 | Runtime | DayZDiag with `dayzOffline.Noronha` |

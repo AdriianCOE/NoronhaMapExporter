@@ -126,6 +126,29 @@ native-pixel and same-world geometric comparisons, and an enriched manifest
 with measured MPP, overlap-derived grid, screenshot count, and estimated
 master dimensions for each candidate scale.
 
+## Freeze a dual-scale RAW reference
+
+After a completed automatic full-world session has passed the geometric
+stitcher, preserve it outside Git with its WRP provenance. This refuses to
+overwrite an existing reference directory:
+
+```powershell
+python .\stitcher\freeze_raw_master.py freeze `
+  --session "<completed-session>" `
+  --reference-root ".\.runtime\reference-exports" `
+  --wrp-sha256 "<binarized-wrp-sha256>" `
+  --name overview `
+  --world-size 10240
+```
+
+Freeze the detail session in the same way with `--name detail`, then create
+the immutable `masters.json` and a native-pixel same-world comparison:
+
+```powershell
+python .\stitcher\freeze_raw_master.py index --reference-root .\.runtime\reference-exports --wrp-sha256 "<wrp-sha256>"
+python .\stitcher\freeze_raw_master.py compare --reference-root .\.runtime\reference-exports --wrp-sha256 "<wrp-sha256>" --bounds 7117.33 8482.67 6816 7584
+```
+
 ## Manual capture and stitch
 
 1. In DayZDiag, press `Ctrl+F8` and wait for calibration.
