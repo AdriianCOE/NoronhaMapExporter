@@ -1,0 +1,42 @@
+{
+  "paths": {
+    "dayz": "C:/Path/To/DayZ",
+    "dayzTools": "C:/Path/To/DayZ Tools",
+    "ragDayZTools": "C:/Path/To/RaG-DayZ-Tools",
+    "python": "python",
+    "terrainMod": "D:/DayZMods/@MyTerrain",
+    "additionalMods": [],
+    "mission": "C:/Path/To/dayzOffline.MyTerrain",
+    "profiles": "./.runtime/profiles",
+    "output": "./output"
+  },
+  "world": {
+    "name": "MyTerrain",
+    "size": 10240
+  },
+  "capture": {
+    "overlap": 0.1,
+    "stabilizationFrames": 2,
+    "timeoutSeconds": 30
+  },
+  "exports": {
+    "overview": { "enabled": true, "scale": 0.33 },
+    "detail": { "enabled": true, "scale": 0.15 }
+  },
+  "cartography": {
+    "grid": false,
+    "gridNumbers": false,
+    "locationLabels": false,
+    "locationIcons": false,
+    "vegetation": { "enabled": true, "opacity": 0.75, "color": "#94D96B" },
+    "contours": { "enabled": true, "opacity": 0.65, "color": "#66513F", "mainOpacity": 0.75 },
+    "roads": { "enabled": true },
+    "tracks": { "enabled": true },
+    "buildings": { "enabled": true },
+    "colors": { "background": "#FFFFFF", "outside": "#D7E8EF", "sea": "#D7E8EF" }
+  },
+  "satmap": {
+    "mode": "source",
+    "source": "C:/Path/To/satmap.png"
+  }
+}

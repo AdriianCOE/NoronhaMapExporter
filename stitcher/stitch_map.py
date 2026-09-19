@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Geometrically stitch a NoronhaMapExporter capture session.
+"""Geometrically stitch a DayZMapExporter capture session.
 
 This tool deliberately never searches image content for seams.  It places every
 capture using the real MapWidget bounds in manifest.json and splits each known
@@ -41,7 +41,7 @@ def require_number(mapping: dict[str, Any], key: str, label: str) -> float:
 def configure_log(session: Path) -> logging.Logger:
     log_dir = session / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger("noronha_map_stitcher")
+    logger = logging.getLogger("dayz_map_stitcher")
     logger.setLevel(logging.INFO)
     for handler in logger.handlers[:]:
         handler.close()
@@ -285,8 +285,8 @@ def stitch(session: Path) -> dict[str, Any]:
 
     output = session / "output"
     output.mkdir(parents=True, exist_ok=True)
-    master_path = output / "noronha_engine_master.png"
-    preview_path = output / "noronha_engine_preview.jpg"
+    master_path = output / "map_master.png"
+    preview_path = output / "map_preview.jpg"
     master.convert("RGB").save(master_path, "PNG")
     preview = master.convert("RGB").copy()
     preview.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
@@ -310,7 +310,7 @@ def stitch(session: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Geometrically stitch a NoronhaMapExporter session.")
+    parser = argparse.ArgumentParser(description="Geometrically stitch a DayZMapExporter session.")
     parser.add_argument("session", type=Path, help="Directory containing manifest.json and captures/")
     args = parser.parse_args()
     try:

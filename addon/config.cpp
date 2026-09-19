@@ -16,6 +16,11 @@ class CfgPatches
 // cartography audit.  Raw remains an empty MapDefaults-derived control.
 class MapDefaults;
 
+// The public product pipeline injects a generated, property-based map control
+// here in an ignored staging copy. Development audit classes below remain
+// internal and are never exposed as public presets.
+// PUBLIC_CARTOGRAPHY_OVERRIDE_PLACEHOLDER
+
 // The build script replaces this marker only in its ignored staging directory.
 // Keeping the committed source empty makes a normal/raw build neutral.
 // CLEAN_LOCATION_OVERRIDE_PLACEHOLDER
@@ -149,6 +154,36 @@ class RscMapControlEngineCleanDetail: RscMapControlEngineCleanDetailAudit
 
 class RscMapControlEngineCleanOverview: RscMapControlEngineCleanOverviewAudit
 {
+};
+
+// Isolated runtime satellite-layer audit. These controls were identified as
+// engine configuration candidates and are intentionally not public options
+// until the local MapWidget proves that they have an observable effect.
+class RscMapControlSatelliteForced: MapDefaults
+{
+	maxSatelliteAlpha = 1;
+	alphaFadeStartScale = 1;
+	alphaFadeEndScale = 1;
+};
+
+class RscMapControlSatelliteIsolated: RscMapControlSatelliteForced
+{
+	colorGrid[] = {0, 0, 0, 0};
+	colorGridMap[] = {0, 0, 0, 0};
+	colorForest[] = {0, 0, 0, 0};
+	colorForestBorder[] = {0, 0, 0, 0};
+	colorRocks[] = {0, 0, 0, 0};
+	colorRocksBorder[] = {0, 0, 0, 0};
+	colorCountlines[] = {0, 0, 0, 0};
+	colorMainCountlines[] = {0, 0, 0, 0};
+	colorCountlinesWater[] = {0, 0, 0, 0};
+	colorMainCountlinesWater[] = {0, 0, 0, 0};
+	colorRoads[] = {0, 0, 0, 0};
+	colorMainRoads[] = {0, 0, 0, 0};
+	colorTracks[] = {0, 0, 0, 0};
+	colorPowerLines[] = {0, 0, 0, 0};
+	colorRailWay[] = {0, 0, 0, 0};
+	colorBuildings[] = {0, 0, 0, 0};
 };
 
 // The build script replaces only this base class in its ignored staged copy.

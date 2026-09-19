@@ -2,18 +2,22 @@
 param(
     [string]$ConfigPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'config.local.ps1'),
     [string]$OutputDirectory,
-    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1', 'no-location-text', 'no-location-icons', 'engine-clean-detail-audit', 'engine-clean-overview-audit', 'engine-clean-detail', 'engine-clean-overview')]
+    [string]$RaGDayZToolsPath,
+    [string]$PythonPath,
+    [string]$CartographyOverridePath,
+    [string]$LocationOverridePath,
+    [ValidateSet('raw', 'no-grid', 'no-labels', 'no-icons', 'reduced-vegetation', 'soft-contours', 'palette', 'combined-v1', 'no-location-text', 'no-location-icons', 'engine-clean-detail-audit', 'engine-clean-overview-audit', 'engine-clean-detail', 'engine-clean-overview', 'satellite-forced', 'satellite-isolated', 'public-config')]
     [string]$CartographyStyle = 'raw'
 )
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
-if (-not (Test-Path -LiteralPath $ConfigPath)) {
+if ((-not $RaGDayZToolsPath) -and -not (Test-Path -LiteralPath $ConfigPath)) {
     throw "Missing local configuration: $ConfigPath. Copy config.example.ps1 to config.local.ps1 and set DayZToolsPath."
 }
 
-. $ConfigPath
+if (-not $RaGDayZToolsPath -and (Test-Path -LiteralPath $ConfigPath)) { . $ConfigPath }
 
 if (-not $RaGDayZToolsPath) { throw 'RaGDayZToolsPath is not configured.' }
 if (-not $PythonPath) { $PythonPath = 'python' }
@@ -35,9 +39,13 @@ $styleParents = @{
     'engine-clean-overview-audit' = 'RscMapControlEngineCleanOverviewAudit'
     'engine-clean-detail' = 'RscMapControlEngineCleanDetail'
     'engine-clean-overview' = 'RscMapControlEngineCleanOverview'
+    'satellite-forced' = 'RscMapControlSatelliteForced'
+    'satellite-isolated' = 'RscMapControlSatelliteIsolated'
+    'public-config' = 'RscMapControlPublicConfig'
 }
 $styleParent = $styleParents[$CartographyStyle]
 $locationOverrideMarker = '// CLEAN_LOCATION_OVERRIDE_PLACEHOLDER'
+$publicCartographyMarker = '// PUBLIC_CARTOGRAPHY_OVERRIDE_PLACEHOLDER'
 $locationOverrides = @{
     'no-location-text' = @'
 class CfgLocationTypes
@@ -123,8 +131,19 @@ $locationOverrides['engine-clean-detail-audit'] = $engineCleanLocationOverride
 $locationOverrides['engine-clean-overview-audit'] = $engineCleanLocationOverride
 $locationOverrides['engine-clean-detail'] = $engineCleanLocationOverride
 $locationOverrides['engine-clean-overview'] = $engineCleanLocationOverride
+$locationOverrides['satellite-isolated'] = $engineCleanLocationOverride
 $locationOverride = $locationOverrides[$CartographyStyle]
 if (-not $locationOverride) { $locationOverride = '' }
+if ($LocationOverridePath) {
+    if (-not (Test-Path -LiteralPath $LocationOverridePath)) { throw "Location override file not found: $LocationOverridePath" }
+    $locationOverride = [System.IO.File]::ReadAllText($LocationOverridePath)
+}
+$publicCartographyOverride = ''
+if ($CartographyOverridePath) {
+    if (-not (Test-Path -LiteralPath $CartographyOverridePath)) { throw "Cartography override file not found: $CartographyOverridePath" }
+    $publicCartographyOverride = [System.IO.File]::ReadAllText($CartographyOverridePath)
+}
+if ($CartographyStyle -eq 'public-config' -and -not $publicCartographyOverride) { throw 'public-config requires -CartographyOverridePath.' }
 
 if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter-dev\Addons'
@@ -146,13 +165,15 @@ $selectedActiveClass = 'class RscMapControlStyleActive: ' + $styleParent
 $stageConfigText = [System.IO.File]::ReadAllText($stageConfig)
 if ($stageConfigText.IndexOf($rawActiveClass, [System.StringComparison]::Ordinal) -lt 0) { throw "Raw RscMapControl selector was not found in $stageConfig" }
 if ($stageConfigText.IndexOf($locationOverrideMarker, [System.StringComparison]::Ordinal) -lt 0) { throw "Location override marker was not found in $stageConfig" }
+if ($stageConfigText.IndexOf($publicCartographyMarker, [System.StringComparison]::Ordinal) -lt 0) { throw "Public cartography marker was not found in $stageConfig" }
 $stageConfigText = $stageConfigText.Replace($rawActiveClass, $selectedActiveClass)
-[System.IO.File]::WriteAllText($stageConfig, $stageConfigText.Replace($locationOverrideMarker, $locationOverride))
+$stageConfigText = $stageConfigText.Replace($locationOverrideMarker, $locationOverride)
+[System.IO.File]::WriteAllText($stageConfig, $stageConfigText.Replace($publicCartographyMarker, $publicCartographyOverride))
 
 & $PythonPath $ragBuilder build `
     --source $stageSourceDirectory `
     --output $packageRoot `
-    --project-root 'P:' `
+    --project-root $repoRoot `
     --temp (Join-Path $repoRoot '.rag-temp') `
     --pbo-name 'NoronhaMapExporter.pbo' `
     --no-binarize `

@@ -10,6 +10,7 @@
 
 # Local path configuration and runtime state
 /config.local.ps1
+/config.json
 /.runtime/
 /profiles/
 /logs/
@@ -21,6 +22,7 @@ crash_*.log
 map-exports/
 captures/
 output/
+/masters/
 *.dds
 
 # Mission runtime/generated state

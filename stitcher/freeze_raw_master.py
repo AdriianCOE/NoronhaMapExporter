@@ -59,8 +59,13 @@ def session_manifest(session: Path) -> dict:
 
 def master_paths(session: Path) -> tuple[Path, Path]:
     output = session / "output"
-    master = output / "noronha_engine_master.png"
-    preview = output / "noronha_engine_preview.jpg"
+    master = output / "map_master.png"
+    preview = output / "map_preview.jpg"
+    # References frozen before productization retain their historical names.
+    if not master.is_file():
+        master = output / "noronha_engine_master.png"
+    if not preview.is_file():
+        preview = output / "noronha_engine_preview.jpg"
     if not master.is_file() or not preview.is_file():
         raise ValueError("stitch output is missing; run stitch_map.py first")
     return master, preview

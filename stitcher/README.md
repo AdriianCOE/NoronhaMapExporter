@@ -37,7 +37,7 @@ only after the geometric canvas is complete.
 
 Outputs:
 
-- `output/noronha_engine_master.png` — exact 0..10240 world crop.
-- `output/noronha_engine_preview.jpg` — convenient reduced preview.
+- `output/map_master.png` — exact configured-world crop.
+- `output/map_preview.jpg` — convenient reduced preview.
 - `logs/stitch.log` — placement and crop evidence.
 - `manifest.json` — updated with the output paths and scale evidence.
