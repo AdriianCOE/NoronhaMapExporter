@@ -10,11 +10,18 @@ successful geometric stitch. The helper is idempotent: reprocessing a request
 reuses its receipt without recapturing or advancing the exporter. Runtime
 sessions, captures, hashes, and local launcher paths remain outside Git.
 
-## Next recorded experiment
+## Detail Scale Audit (2026-09-19)
 
-`Detail Scale Audit`: capture the same location at multiple configured
-`MapWidget.SetScale` values to determine when buildings and other additional
-details appear. It is deliberately not part of this baseline.
+Status: completed in an isolated automatic session at `X=7800, Z=7200`, the
+Vila dos Remédios / Vila do Trinta cluster. All five requested scales completed
+with matching `OK` ACKs and unique request IDs (`1` through `5`), producing
+opaque 1920×1080 RGB PNGs. The review utility makes native-pixel and
+same-world geometric comparisons without resampling or feature matching.
+
+The measured candidates and full-world cost estimates are: `0.33` = 15 tiles
+at 2.34667 m/px; `0.25` = 24 at 1.77778 m/px; `0.20` = 40 at 1.42222 m/px;
+`0.15` = 60 at 1.06667 m/px; `0.10` = 135 at 0.711111 m/px. The audit is a
+decision aid, not a new full-world export or a cartographic style change.
 
 | Item | Validated baseline |
 | --- | --- |

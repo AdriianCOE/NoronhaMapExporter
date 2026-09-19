@@ -13,6 +13,7 @@
 | --- | --- |
 | `Ctrl+F8` | Open or close the exporter |
 | `F6` | Start a new full-export session |
+| `F4` | Run the configured automatic Detail Scale Audit |
 | `F8` | Start automatic export (helper required) |
 | `F5` | Run automatic 2×2 smoke test |
 | `F9` | Retry the failed/timeout automatic tile |
@@ -47,6 +48,27 @@ waits for stabilization, and does not advance on a timeout or error.
 
 For failure, use `F9` to send a new request for the same stable tile, use
 `F10` to abort, or return to the preserved manual `F6`/screenshot/`N` flow.
+
+## Detail Scale Audit
+
+Set `DetailAudit.Enabled`, `CenterX`, `CenterZ`, and `Scales` in the local
+profile configuration. `F4` creates a normal helper-visible session, then
+captures each configured scale in order at the same requested world-space
+center. It records target/actual scale, requested/actual center, bounds, MPP,
+dimensions, SHA-256, and request ID in the session manifest.
+
+After a valid completed audit, create the review package:
+
+```powershell
+python .\stitcher\detail_audit.py --session "<session-directory>"
+```
+
+`detail-audit/comparison_native.png` keeps full native frames side by side.
+`comparison_same_world_area.png` crops the common world-space intersection
+geometrically and preserves each source crop's native pixels; it does not
+upscale, sharpen, or use feature matching. The enhanced audit manifest also
+derives each full-world cost estimate from the recorded `ScreenToMap` bounds
+and the configured overlap.
 
 ## Stitch
 

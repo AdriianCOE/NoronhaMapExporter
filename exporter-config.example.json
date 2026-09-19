@@ -11,5 +11,11 @@
   "AutoCaptureEnabled": true,
   "StabilizationFrames": 2,
   "StabilizationTolerance": 0.01,
-  "CaptureTimeoutSeconds": 30
+  "CaptureTimeoutSeconds": 30,
+  "DetailAudit": {
+    "Enabled": false,
+    "CenterX": 0,
+    "CenterZ": 0,
+    "Scales": [0.33, 0.25, 0.20, 0.15, 0.10]
+  }
 }

@@ -104,6 +104,28 @@ The helper writes ACKs with temp-and-replace. The addon writes a complete JSON
 request in one operation; the helper treats parse/IO failures as not-ready and
 retries, so it never acts on a partial request.
 
+## Detail Scale Audit
+
+`F4` runs the isolated automatic Detail Scale Audit. Configure `DetailAudit`
+in the ignored profile `exporter-config.json`; its center is world-space and
+its scales are tried in the stated order. Each capture remains at the same
+world-space center, while `ScreenToMap` records the actual bounds and MPP for
+that scale. The committed example is disabled so it cannot start accidentally.
+
+For Noronha the local audit configuration uses `X=7800, Z=7200`, covering the
+Vila dos Remédios / Vila do Trinta cluster identified in the terrain's
+keypoints source. Once the five automatic ACKs complete, build the review
+artifacts without feature matching or resampling:
+
+```powershell
+python .\stitcher\detail_audit.py --session "<session-directory>"
+```
+
+It writes `<session-directory>\detail-audit\`: verified original RGB PNGs,
+native-pixel and same-world geometric comparisons, and an enriched manifest
+with measured MPP, overlap-derived grid, screenshot count, and estimated
+master dimensions for each candidate scale.
+
 ## Manual capture and stitch
 
 1. In DayZDiag, press `Ctrl+F8` and wait for calibration.
