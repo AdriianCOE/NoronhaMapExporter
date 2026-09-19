@@ -38,5 +38,15 @@
   "satmap": {
     "mode": "source",
     "source": "C:/Path/To/satmap.png"
+  },
+  "hillshade": {
+    "enabled": false,
+    "heightmap": "",
+    "mode": "multidirectional-slope-weighted",
+    "opacity": 0.225,
+    "seaLevel": -2,
+    "elevation": 40,
+    "slopeStart": 5,
+    "slopeFull": 30
   }
 }

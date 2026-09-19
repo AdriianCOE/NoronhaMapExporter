@@ -78,6 +78,10 @@ There are two explicit choices:
 
 Use `source` for a standalone satellite raster. See [docs/SATELLITE_AUDIT.md](docs/SATELLITE_AUDIT.md) for runtime evidence and the integration boundary.
 
+## Optional hillshade
+
+Set `hillshade.enabled` only when you have the authoritative ASC used to make the terrain. The default `multidirectional-slope-weighted` setting uses terrain slope to keep flats nearly neutral and make steep relief readable; it writes separate `output/<world>/tourist/*_hillshade.png` files. The clean `2d/*.png` master is never overwritten. If no heightmap is configured, the 2D export continues and reports that hillshade was skipped.
+
 ## Guarantees and limits
 
 - Capture uses the real DayZ client rectangle and produces RGB lossless PNGs.

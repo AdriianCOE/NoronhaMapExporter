@@ -72,8 +72,10 @@ $python = if ($validation.config.paths.python) { [string]$validation.config.path
 if (-not (Get-Command $python -ErrorAction SilentlyContinue) -and -not (Test-Path -LiteralPath $python)) { throw "Python executable was not found: $python" }
 $output2d = Join-Path $validation.output (Join-Path $validation.worldName '2d')
 $previewOutput = Join-Path $output2d 'previews'
+$touristOutput = Join-Path $validation.output (Join-Path $validation.worldName 'tourist')
 $logs = Join-Path $validation.output (Join-Path $validation.worldName 'logs')
 New-Item -ItemType Directory -Force -Path $output2d, $previewOutput, $logs | Out-Null
+if ($validation.config.hillshade -and $validation.config.hillshade.enabled) { New-Item -ItemType Directory -Force -Path $touristOutput | Out-Null }
 
 $generation = Join-Path $PSScriptRoot ('.runtime\public-config\' + $validation.worldName)
 & (Join-Path $PSScriptRoot 'scripts\generate-public-cartography.ps1') -ConfigPath $validation.configPath -OutputDirectory $generation | Out-Host
@@ -99,7 +101,9 @@ if ($validation.terrainMod) { $mods += $validation.terrainMod }
 $mods += @($validation.config.paths.additionalMods | ForEach-Object { if ($_){ Resolve-ConfiguredPath ([string]$_) $validation.configPath } })
 $mods += $package
 $finalExports = @()
+$touristExports = @()
 $dayz = $null
+if ($validation.hillshadeWarning) { Write-Warning $validation.hillshadeWarning }
 try {
     foreach ($export in $exports) {
         Write-ExporterConfig $validation $export.Scale
@@ -118,6 +122,14 @@ try {
         Copy-Item -LiteralPath $preview -Destination (Join-Path $previewOutput ($export.Name + '.jpg')) -Force
         $manifest = Get-Content -LiteralPath (Join-Path $session 'manifest.json') -Raw | ConvertFrom-Json
         $finalExports += [ordered]@{ name = $export.Name; scale = $export.Scale; sourceSession = $session; dimensions = @{ width = $manifest.stitch.width; height = $manifest.stitch.height }; metersPerPixel = $manifest.stitch.metersPerPixel; sha256 = (Get-FileHash -LiteralPath $master -Algorithm SHA256).Hash.ToLowerInvariant() }
+        if ($validation.hillshadePath) {
+            $hillshade = $validation.config.hillshade
+            $touristMaster = Join-Path $touristOutput ($export.Name + '_hillshade.png')
+            $touristManifest = Join-Path $touristOutput ($export.Name + '_hillshade.manifest.json')
+            & $python (Join-Path $PSScriptRoot 'stitcher\apply_hillshade.py') --heightmap $validation.hillshadePath --master (Join-Path $output2d ($export.Name + '.png')) --output $touristMaster --manifest $touristManifest --world-size $validation.worldSize --sea-level $hillshade.seaLevel --opacity $hillshade.opacity --elevation $(if ($hillshade.elevation) { $hillshade.elevation } else { 40 }) --slope-start $(if ($hillshade.slopeStart) { $hillshade.slopeStart } else { 5 }) --slope-full $(if ($hillshade.slopeFull) { $hillshade.slopeFull } else { 30 }) 2>&1 | Tee-Object -FilePath (Join-Path $logs ($export.Name + '-hillshade.log'))
+            if ($LASTEXITCODE -eq 0) { $touristExports += Get-Content -LiteralPath $touristManifest -Raw | ConvertFrom-Json }
+            else { Write-Warning "Hillshade failed for $($export.Name); the clean 2D output was preserved." }
+        }
         if (-not $dayz.HasExited) { Stop-Process -Id $dayz.Id -Force }
         $dayz = $null
     }
@@ -127,4 +139,5 @@ finally {
     if (-not $helper.HasExited) { Stop-Process -Id $helper.Id -Force }
 }
 [ordered]@{ version = 1; world = $validation.worldName; worldSize = $validation.worldSize; cartography = $validation.config.cartography; satelliteMode = $validation.satmapMode; capabilities = $capabilities; exports = $finalExports } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $output2d 'manifest.json') -Encoding utf8
+if ($validation.hillshadePath) { [ordered]@{ version = 1; world = $validation.worldName; exports = $touristExports } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $touristOutput 'manifest.json') -Encoding utf8 }
 Write-Host "2D output written to $output2d"

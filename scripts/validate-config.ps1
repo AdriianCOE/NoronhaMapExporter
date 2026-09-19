@@ -49,7 +49,17 @@ if ($Mode -eq '2d') {
     $satmap = $config.satmap
     $satmapMode = if ($satmap -and $satmap.mode) { [string]$satmap.mode } else { 'source' }
     if ($satmapMode -notin @('source', 'engine')) { Fail "satmap.mode '$satmapMode' must be 'source' or 'engine'." }
-    $result = [ordered]@{ config = $config; configPath = [System.IO.Path]::GetFullPath($ConfigPath); dayz = $dayz; dayzTools = $tools; ragDayZTools = $rag; mission = $mission; terrainMod = $terrain; profiles = $profiles; output = $output; worldName = $worldName; worldSize = $worldSize; satmapMode = $satmapMode }
+    $hillshadePath = $null
+    $hillshadeWarning = $null
+    if ($config.hillshade -and $config.hillshade.enabled) {
+        if ([string]$config.hillshade.mode -ne 'multidirectional-slope-weighted') { Fail "hillshade.mode must be 'multidirectional-slope-weighted'." }
+        if ([double]$config.hillshade.opacity -le 0 -or [double]$config.hillshade.opacity -gt 1) { Fail 'hillshade.opacity must be greater than zero and at most one.' }
+        if ($null -eq $config.hillshade.seaLevel) { Fail 'hillshade.seaLevel is required when hillshade is enabled.' }
+        $candidate = [string]$config.hillshade.heightmap
+        if ([string]::IsNullOrWhiteSpace($candidate)) { $hillshadeWarning = 'Hillshade skipped: no heightmap source configured.' }
+        else { $hillshadePath = Resolve-ConfigPath $candidate $configDirectory; if (-not (Test-Path -LiteralPath $hillshadePath -PathType Leaf)) { $hillshadeWarning = "Hillshade skipped: heightmap source was not found at: $hillshadePath"; $hillshadePath = $null } }
+    }
+    $result = [ordered]@{ config = $config; configPath = [System.IO.Path]::GetFullPath($ConfigPath); dayz = $dayz; dayzTools = $tools; ragDayZTools = $rag; mission = $mission; terrainMod = $terrain; profiles = $profiles; output = $output; worldName = $worldName; worldSize = $worldSize; satmapMode = $satmapMode; hillshadePath = $hillshadePath; hillshadeWarning = $hillshadeWarning }
 }
 else {
     $satmap = $config.satmap
