@@ -3,6 +3,9 @@
 *.bisign
 *.bikey
 /build/
+/capture-helper/bin/
+/capture-helper/obj/
+/.rag-temp/
 /addon/config.bin
 
 # Local path configuration and runtime state

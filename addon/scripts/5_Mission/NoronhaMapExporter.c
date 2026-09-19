@@ -26,19 +26,50 @@ class NoronhaMapExporterTile
 	string ZAxisDirection;
 };
 
+class DayZMapExporterConfig
+{
+	string WorldName;
+	float WorldSize;
+	float WorldMinX;
+	float WorldMaxX;
+	float WorldMinZ;
+	float WorldMaxZ;
+	float ExportScale;
+	float OverlapFraction;
+	string OutputPrefix;
+	bool AutoCaptureEnabled;
+	int StabilizationFrames;
+	float StabilizationTolerance;
+	float CaptureTimeoutSeconds;
+};
+
+class DayZMapCaptureAck
+{
+	// JsonFileLoader maps field names exactly. Keep these aligned with the
+	// lower-camel-case ACK written by the external capture helper.
+	int protocolVersion;
+	string sessionId;
+	int requestId;
+	string filename;
+	int width;
+	int height;
+	string sha256;
+	string status;
+	string error;
+};
+
 class NoronhaMapExporter
 {
 	protected const string LAYOUT_PATH = "NoronhaMapExporter/gui/layouts/noronha_map_exporter.layout";
 	protected const string LOG_PREFIX = "[NoronhaMapExporter] ";
-	protected const float EXPORT_SCALE = 0.33;
-	protected const float TILE_OVERLAP_FRACTION = 0.10;
-	protected const float WORLD_MIN_X = 0.0;
-	protected const float WORLD_MAX_X = 10240.0;
-	protected const float WORLD_MIN_Z = 0.0;
-	protected const float WORLD_MAX_Z = 10240.0;
-	protected const int CALIBRATION_FRAME_DELAY = 2;
 	protected const float CONSISTENCY_TOLERANCE = 0.01;
 	protected const float SQUARE_PIXEL_TOLERANCE = 0.001;
+	protected const int AUTO_STATE_IDLE = 0;
+	protected const int AUTO_STATE_SETTLING = 1;
+	protected const int AUTO_STATE_WAITING_FOR_ACK = 2;
+	protected const int AUTO_STATE_CAPTURE_FAILED = 3;
+	protected const int AUTO_STATE_EXPORT_COMPLETE = 4;
+	protected const string CONFIG_PATH = "$profile:/DayZMapExporter/exporter-config.json";
 
 	protected ref Widget m_Root;
 	protected ref MapWidget m_Map;
@@ -48,6 +79,7 @@ class NoronhaMapExporter
 	protected ref array<ref NoronhaMapExporterTile> m_VisitedTiles;
 	protected ref array<ref NoronhaMapExporterTile> m_CapturedTiles;
 	protected ref array<ref NoronhaMapExporterTile> m_CaptureSequence;
+	protected ref DayZMapExporterConfig m_Config;
 	protected vector m_RequestedCenter;
 	protected bool m_IsOpen;
 	protected bool m_DebugVisible;
@@ -55,6 +87,8 @@ class NoronhaMapExporter
 	protected bool m_FullExportActive;
 	protected bool m_FullExportCompleted;
 	protected bool m_CaptureReady;
+	protected bool m_AutomaticExportActive;
+	protected bool m_AutoSmokeActive;
 	protected int m_CalibrationFramesRemaining;
 	protected int m_TileReadFramesRemaining;
 	protected int m_GridX;
@@ -63,11 +97,20 @@ class NoronhaMapExporter
 	protected int m_GridRows;
 	protected int m_CaptureSequenceIndex;
 	protected int m_SessionNonce;
+	protected int m_AutoState;
+	protected int m_AutoRequestId;
+	protected int m_AutoCleanFramesRemaining;
+	protected int m_ActiveGridColumns;
+	protected int m_ActiveGridRows;
+	protected float m_AckWaitSeconds;
+	protected bool m_AckFileSeen;
+	protected bool m_AckFieldsLogged;
 	protected float m_TileStepX;
 	protected float m_TileStepZ;
 	protected float m_TileZeroCenterX;
 	protected float m_TileZeroCenterZ;
 	protected string m_SessionDirectory;
+	protected string m_SessionId;
 
 	void NoronhaMapExporter()
 	{
@@ -90,6 +133,7 @@ class NoronhaMapExporter
 	void Open()
 	{
 		if (m_IsOpen) return;
+		if (!LoadConfiguration()) return;
 		m_Root = g_Game.GetWorkspace().CreateWidgets(LAYOUT_PATH);
 		m_Map = MapWidget.Cast(m_Root.FindAnyWidget("NoronhaMap"));
 		m_DebugOverlay = m_Root.FindAnyWidget("DebugOverlay");
@@ -106,6 +150,10 @@ class NoronhaMapExporter
 		m_FullExportActive = false;
 		m_FullExportCompleted = false;
 		m_CaptureReady = false;
+		m_AutomaticExportActive = false;
+		m_AutoSmokeActive = false;
+		m_AutoState = AUTO_STATE_IDLE;
+		m_AutoRequestId = 0;
 		m_GridX = 0;
 		m_GridZ = 0;
 		m_GridColumns = 0;
@@ -114,11 +162,11 @@ class NoronhaMapExporter
 		m_VisitedTiles.Clear();
 		m_CapturedTiles.Clear();
 		m_CaptureSequence.Clear();
-		m_CalibrationFramesRemaining = CALIBRATION_FRAME_DELAY;
-		m_RequestedCenter = Vector(5120, 0, 5120);
+		m_CalibrationFramesRemaining = m_Config.StabilizationFrames;
+		m_RequestedCenter = Vector((m_Config.WorldMinX + m_Config.WorldMaxX) * 0.5, 0, (m_Config.WorldMinZ + m_Config.WorldMaxZ) * 0.5);
 		m_Root.Update();
 		m_Map.ClearUserMarks();
-		m_Map.SetScale(EXPORT_SCALE);
+		m_Map.SetScale(m_Config.ExportScale);
 		m_Map.SetMapPos(m_RequestedCenter);
 		ShowHud(false);
 		ShowCursorWidget(false);
@@ -150,6 +198,11 @@ class NoronhaMapExporter
 			if (m_CalibrationFramesRemaining <= 0) CalibrateGrid();
 			return;
 		}
+		if (m_AutomaticExportActive && m_AutoState == AUTO_STATE_WAITING_FOR_ACK)
+		{
+			TickAutomaticAck(timeslice);
+			return;
+		}
 		if (m_TileReadFramesRemaining > 0)
 		{
 			m_TileReadFramesRemaining--;
@@ -158,8 +211,21 @@ class NoronhaMapExporter
 				RefreshCurrentTile();
 				PrintCurrentTile();
 				CheckRepeatability();
+				if (!IsCurrentTileStable())
+				{
+					Print(LOG_PREFIX + "Waiting for stable MapWidget bounds before capture.");
+					m_TileReadFramesRemaining = 1;
+					return;
+				}
+				if (m_AutomaticExportActive && m_AutoCleanFramesRemaining > 0)
+				{
+					m_AutoCleanFramesRemaining--;
+					m_TileReadFramesRemaining = 1;
+					return;
+				}
 				m_CaptureReady = true;
-				if (m_FullExportActive) PrintCaptureReady();
+				if (m_AutomaticExportActive) BeginAutomaticCapture();
+				else if (m_FullExportActive) PrintCaptureReady();
 			}
 			return;
 		}
@@ -173,6 +239,10 @@ class NoronhaMapExporter
 		{
 			case KeyCode.KC_ESCAPE: Close(); break;
 			case KeyCode.KC_F6: StartFullExport(); break;
+			case KeyCode.KC_F8: StartAutomaticExport(false); break;
+			case KeyCode.KC_F5: StartAutomaticExport(true); break;
+			case KeyCode.KC_F9: RetryAutomaticCapture(); break;
+			case KeyCode.KC_F10: AbortAutomaticExport(); break;
 			case KeyCode.KC_N: ConfirmCaptureAndMoveNext(); break;
 			case KeyCode.KC_B: MoveToPreviousCapture(); break;
 			case KeyCode.KC_F7: SetDebugVisible(!m_DebugVisible); break;
@@ -185,6 +255,106 @@ class NoronhaMapExporter
 		}
 	}
 
+	protected bool IsCurrentTileStable()
+	{
+		if (!m_CurrentTile) return false;
+		// MapWidget clamps SetMapPos at world edges. The actual center can therefore
+		// differ from the requested center while the rendered bounds are stable.
+		if (Absolute(m_CurrentTile.GetScale - m_Config.ExportScale) > m_Config.StabilizationTolerance) return false;
+		if (m_CurrentTile.WidgetPixelWidth <= 0 || m_CurrentTile.WidgetPixelHeight <= 0 || m_CurrentTile.VisibleWorldWidth <= 0 || m_CurrentTile.VisibleWorldHeight <= 0 || m_CurrentTile.MetersPerPixelX <= 0 || m_CurrentTile.MetersPerPixelZ <= 0) return false;
+		if (Absolute(m_CurrentTile.MetersPerPixelX - m_CurrentTile.MetersPerPixelZ) > SQUARE_PIXEL_TOLERANCE) return false;
+		return true;
+	}
+
+	protected void BeginAutomaticCapture()
+	{
+		if (!m_AutomaticExportActive || !m_CaptureReady || !m_CurrentTile) return;
+		m_AckWaitSeconds = 0;
+		m_AckFileSeen = false;
+		m_AckFieldsLogged = false;
+		string ackPath = m_SessionDirectory + "/capture_ack.json";
+		if (FileExist(ackPath))
+		{
+			DeleteFile(ackPath);
+			Print(LOG_PREFIX + "[AutoCapture] cleared stale ACK before request=" + m_AutoRequestId);
+		}
+		if (!WriteCaptureRequest()) return;
+		m_AutoState = AUTO_STATE_WAITING_FOR_ACK;
+		Print(LOG_PREFIX + string.Format("[AutoCapture] state=WAITING_FOR_ACK request=%1 tile=%2/%3 requestPath=%4", m_AutoRequestId, m_CaptureSequenceIndex + 1, m_CaptureSequence.Count(), m_SessionDirectory + "/capture_request.json"));
+		Print(LOG_PREFIX + "[AutoCapture] ackPath=" + m_SessionDirectory + "/capture_ack.json");
+	}
+
+	protected void TickAutomaticAck(float timeslice)
+	{
+		m_AckWaitSeconds += timeslice;
+		string ackPath = m_SessionDirectory + "/capture_ack.json";
+		bool ackExists = FileExist(ackPath);
+		if (!ackExists)
+		{
+			if (m_AckWaitSeconds >= m_Config.CaptureTimeoutSeconds)
+			{
+				m_AutoState = AUTO_STATE_CAPTURE_FAILED;
+				Print(LOG_PREFIX + "CAPTURE_TIMEOUT. Tile was not advanced; press F9 to retry or F10 to abort.");
+			}
+			return;
+		}
+		if (!m_AckFileSeen)
+		{
+			m_AckFileSeen = true;
+			Print(LOG_PREFIX + "[AutoCapture] FileExist=true");
+			Print(LOG_PREFIX + "[AutoCapture] LoadFile begin");
+		}
+		DayZMapCaptureAck ack = new DayZMapCaptureAck();
+		string ackLoadError;
+		if (!JsonFileLoader<DayZMapCaptureAck>.LoadFile(ackPath, ack, ackLoadError))
+		{
+			Print(LOG_PREFIX + "[AutoCapture] LoadFile error=" + ackLoadError);
+			m_AutoState = AUTO_STATE_CAPTURE_FAILED;
+			return;
+		}
+		NoronhaMapExporterTile slot = m_CaptureSequence.Get(m_CaptureSequenceIndex);
+		if (!m_AckFieldsLogged)
+		{
+			m_AckFieldsLogged = true;
+			Print(LOG_PREFIX + "[AutoCapture] ack.sessionId=" + ack.sessionId);
+			Print(LOG_PREFIX + "[AutoCapture] expected.sessionId=" + m_SessionId);
+			Print(LOG_PREFIX + string.Format("[AutoCapture] ack.requestId=%1 expected.requestId=%2", ack.requestId, m_AutoRequestId));
+			Print(LOG_PREFIX + "[AutoCapture] ack.filename=" + ack.filename);
+			Print(LOG_PREFIX + "[AutoCapture] expected.filename=" + slot.Filename);
+			Print(LOG_PREFIX + "[AutoCapture] ack.status=" + ack.status);
+		}
+		if (ack.protocolVersion != 1) { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED protocolVersion"); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		if (ack.sessionId != m_SessionId) { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED sessionId"); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		if (ack.requestId != m_AutoRequestId) { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED requestId"); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		if (ack.filename != slot.Filename) { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED filename"); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		if (ack.status != "OK") { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED status=" + ack.status + " error=" + ack.error); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		if (Absolute(ack.width - m_CurrentTile.WidgetPixelWidth) > CONSISTENCY_TOLERANCE || Absolute(ack.height - m_CurrentTile.WidgetPixelHeight) > CONSISTENCY_TOLERANCE || ack.sha256 == "") { Print(LOG_PREFIX + "[AutoCapture] ACK_REJECTED dimensions_or_sha256"); m_AutoState = AUTO_STATE_CAPTURE_FAILED; return; }
+		Print(LOG_PREFIX + "[AutoCapture] ACK ACCEPTED request=" + ack.requestId + " filename=" + ack.filename + " sha256=" + ack.sha256);
+		ConfirmCaptureAndMoveNext();
+	}
+
+	protected bool LoadConfiguration()
+	{
+		if (!FileExist(CONFIG_PATH))
+		{
+			Print(LOG_PREFIX + "ERROR: missing " + CONFIG_PATH + ". Copy exporter-config.example.json into the profile before opening the exporter.");
+			return false;
+		}
+		m_Config = new DayZMapExporterConfig();
+		string configLoadError;
+		if (!JsonFileLoader<DayZMapExporterConfig>.LoadFile(CONFIG_PATH, m_Config, configLoadError))
+		{
+			Print(LOG_PREFIX + "ERROR: could not read exporter-config.json: " + configLoadError);
+			return false;
+		}
+		if (m_Config.WorldName == "" || m_Config.WorldMaxX <= m_Config.WorldMinX || m_Config.WorldMaxZ <= m_Config.WorldMinZ || m_Config.WorldSize <= 0 || m_Config.ExportScale <= 0 || m_Config.OverlapFraction < 0 || m_Config.OverlapFraction >= 1 || m_Config.OutputPrefix == "" || m_Config.StabilizationFrames < 1 || m_Config.CaptureTimeoutSeconds <= 0)
+		{
+			Print(LOG_PREFIX + "ERROR: exporter-config.json is invalid. Check world bounds, worldSize, scale, overlap, prefix, frames, and timeout.");
+			return false;
+		}
+		return true;
+	}
+
 	protected void CalibrateGrid()
 	{
 		NoronhaMapExporterTile calibration = ReadTileBounds();
@@ -193,16 +363,16 @@ class NoronhaMapExporter
 			Print(LOG_PREFIX + "ERROR: ScreenToMap returned invalid viewport dimensions. Calibration stopped.");
 			return;
 		}
-		m_TileStepX = calibration.VisibleWorldWidth * (1.0 - TILE_OVERLAP_FRACTION);
-		m_TileStepZ = calibration.VisibleWorldHeight * (1.0 - TILE_OVERLAP_FRACTION);
-		m_GridColumns = CalculateTileCount(WORLD_MAX_X - WORLD_MIN_X, calibration.VisibleWorldWidth, m_TileStepX);
-		m_GridRows = CalculateTileCount(WORLD_MAX_Z - WORLD_MIN_Z, calibration.VisibleWorldHeight, m_TileStepZ);
-		m_TileZeroCenterX = CalculateFirstCenter(WORLD_MIN_X, WORLD_MAX_X, calibration.VisibleWorldWidth, m_TileStepX, m_GridColumns);
-		m_TileZeroCenterZ = CalculateFirstCenter(WORLD_MIN_Z, WORLD_MAX_Z, calibration.VisibleWorldHeight, m_TileStepZ, m_GridRows);
+		m_TileStepX = calibration.VisibleWorldWidth * (1.0 - m_Config.OverlapFraction);
+		m_TileStepZ = calibration.VisibleWorldHeight * (1.0 - m_Config.OverlapFraction);
+		m_GridColumns = CalculateTileCount(m_Config.WorldMaxX - m_Config.WorldMinX, calibration.VisibleWorldWidth, m_TileStepX);
+		m_GridRows = CalculateTileCount(m_Config.WorldMaxZ - m_Config.WorldMinZ, calibration.VisibleWorldHeight, m_TileStepZ);
+		m_TileZeroCenterX = CalculateFirstCenter(m_Config.WorldMinX, m_Config.WorldMaxX, calibration.VisibleWorldWidth, m_TileStepX, m_GridColumns);
+		m_TileZeroCenterZ = CalculateFirstCenter(m_Config.WorldMinZ, m_Config.WorldMaxZ, calibration.VisibleWorldHeight, m_TileStepZ, m_GridRows);
 		BuildCaptureSequence();
 		m_IsCalibrated = true;
 		MoveToTile(0, 0);
-		Print(LOG_PREFIX + string.Format("Calibration complete. visible=%1 x %2 m, step=%3 x %4 m, overlap=%5%%, grid=%6 x %7 (%8 tiles).", calibration.VisibleWorldWidth, calibration.VisibleWorldHeight, m_TileStepX, m_TileStepZ, TILE_OVERLAP_FRACTION * 100, m_GridColumns, m_GridRows, m_CaptureSequence.Count()));
+		Print(LOG_PREFIX + string.Format("Calibration complete. visible=%1 x %2 m, step=%3 x %4 m, overlap=%5%%, grid=%6 x %7 (%8 tiles).", calibration.VisibleWorldWidth, calibration.VisibleWorldHeight, m_TileStepX, m_TileStepZ, m_Config.OverlapFraction * 100, m_GridColumns, m_GridRows, m_CaptureSequence.Count()));
 	}
 
 	protected int CalculateTileCount(float worldSize, float visibleSize, float step)
@@ -252,9 +422,9 @@ class NoronhaMapExporter
 		m_GridZ = Math.Clamp(gridZ, 0, m_GridRows - 1);
 		m_RequestedCenter = Vector(m_TileZeroCenterX + (m_GridX * m_TileStepX), 0, m_TileZeroCenterZ + (m_GridZ * m_TileStepZ));
 		m_CaptureReady = false;
-		m_Map.SetScale(EXPORT_SCALE);
+		m_Map.SetScale(m_Config.ExportScale);
 		m_Map.SetMapPos(m_RequestedCenter);
-		m_TileReadFramesRemaining = CALIBRATION_FRAME_DELAY;
+		m_TileReadFramesRemaining = m_Config.StabilizationFrames;
 	}
 
 	protected void StartFullExport()
@@ -265,11 +435,86 @@ class NoronhaMapExporter
 			return;
 		}
 		CreateExportSession();
+		m_AutomaticExportActive = false;
+		m_AutoSmokeActive = false;
+		m_AutoState = AUTO_STATE_IDLE;
 		m_FullExportActive = true;
 		m_FullExportCompleted = false;
+		m_ActiveGridColumns = m_GridColumns;
+		m_ActiveGridRows = m_GridRows;
 		m_CaptureSequenceIndex = 0;
 		MoveToCurrentCaptureSlot();
 		Print(LOG_PREFIX + string.Format("FULL EXPORT started: %1 tiles, serpentine north-to-south. Capture in CLEAN mode, then press N.", m_CaptureSequence.Count()));
+	}
+
+	protected void StartAutomaticExport(bool smoke)
+	{
+		if (!m_IsCalibrated || !m_Config.AutoCaptureEnabled)
+		{
+			Print(LOG_PREFIX + "AUTO EXPORT is unavailable until calibration completes and autoCaptureEnabled is true in exporter-config.json.");
+			return;
+		}
+		if (smoke && (m_GridColumns < 2 || m_GridRows < 2))
+		{
+			Print(LOG_PREFIX + "AUTO SMOKE requires a grid of at least 2 x 2.");
+			return;
+		}
+		CreateExportSession();
+		m_AutomaticExportActive = true;
+		m_AutoSmokeActive = smoke;
+		m_AutoState = AUTO_STATE_SETTLING;
+		m_FullExportActive = true;
+		m_FullExportCompleted = false;
+		m_CaptureSequenceIndex = 0;
+		m_AutoRequestId = 1;
+		m_AutoCleanFramesRemaining = m_Config.StabilizationFrames;
+		SetDebugVisible(false);
+		if (smoke)
+			BuildSmokeCaptureSequence();
+		else
+		{
+			BuildCaptureSequence();
+			m_ActiveGridColumns = m_GridColumns;
+			m_ActiveGridRows = m_GridRows;
+		}
+		MoveToCurrentCaptureSlot();
+		string exportMode = "EXPORT";
+		if (smoke) exportMode = "SMOKE 2x2";
+		Print(LOG_PREFIX + string.Format("AUTO %1 started: %2 tiles. CLEAN is forced; waiting for helper ACKs.", exportMode, m_CaptureSequence.Count()));
+		Print(LOG_PREFIX + string.Format("[AutoCapture] state=SETTLING grid=%1,%2 request=%3", m_GridX, m_GridZ, m_AutoRequestId));
+	}
+
+	protected void BuildSmokeCaptureSequence()
+	{
+		m_CaptureSequence.Clear();
+		m_ActiveGridColumns = 2;
+		m_ActiveGridRows = 2;
+		int index = 0;
+		for (int gridZ = 0; gridZ < 2; gridZ++)
+			for (int gridX = 0; gridX < 2; gridX++) AddCaptureSlot(index++, gridX, gridZ);
+	}
+
+	protected void RetryAutomaticCapture()
+	{
+		if (!m_AutomaticExportActive || m_AutoState != AUTO_STATE_CAPTURE_FAILED || !m_CaptureReady)
+		{
+			Print(LOG_PREFIX + "F9 retries only the failed automatic tile after it is stable.");
+			return;
+		}
+		m_AutoCleanFramesRemaining = m_Config.StabilizationFrames;
+		m_AutoState = AUTO_STATE_SETTLING;
+		m_TileReadFramesRemaining = 1;
+		Print(LOG_PREFIX + "Retrying current automatic tile.");
+	}
+
+	protected void AbortAutomaticExport()
+	{
+		if (!m_AutomaticExportActive) return;
+		m_AutomaticExportActive = false;
+		m_FullExportActive = false;
+		m_AutoState = AUTO_STATE_CAPTURE_FAILED;
+		WriteManifest();
+		Print(LOG_PREFIX + "AUTO EXPORT aborted. The manifest remains incomplete; manual export can be started with F6.");
 	}
 
 	protected void CreateExportSession()
@@ -277,7 +522,7 @@ class NoronhaMapExporter
 		int year; int month; int day; int hour; int minute; int second;
 		GetYearMonthDay(year, month, day);
 		GetHourMinuteSecond(hour, minute, second);
-		string sessionBase = string.Format("$profile:/NoronhaMapExporter/map-exports/%1-%2-%3_%4-%5-%6", year, Pad2(month), Pad2(day), Pad2(hour), Pad2(minute), Pad2(second));
+		string sessionBase = string.Format("$profile:/DayZMapExporter/map-exports/%1-%2-%3_%4-%5-%6", year, Pad2(month), Pad2(day), Pad2(hour), Pad2(minute), Pad2(second));
 		m_SessionNonce++;
 		m_SessionDirectory = sessionBase + "_" + Pad2(m_SessionNonce);
 		while (FileExist(m_SessionDirectory + "/manifest.json"))
@@ -285,13 +530,14 @@ class NoronhaMapExporter
 			m_SessionNonce++;
 			m_SessionDirectory = sessionBase + "_" + Pad2(m_SessionNonce);
 		}
-		MakeDirectory("$profile:/NoronhaMapExporter");
-		MakeDirectory("$profile:/NoronhaMapExporter/map-exports");
+		MakeDirectory("$profile:/DayZMapExporter");
+		MakeDirectory("$profile:/DayZMapExporter/map-exports");
 		MakeDirectory(m_SessionDirectory);
 		MakeDirectory(m_SessionDirectory + "/captures");
 		MakeDirectory(m_SessionDirectory + "/output");
 		MakeDirectory(m_SessionDirectory + "/logs");
 		m_CapturedTiles.Clear();
+		m_SessionId = string.Format("%1-%2", year.ToString() + Pad2(month) + Pad2(day) + Pad2(hour) + Pad2(minute) + Pad2(second), m_SessionNonce);
 	}
 
 	protected void ConfirmCaptureAndMoveNext()
@@ -311,17 +557,26 @@ class NoronhaMapExporter
 		if (m_CaptureSequenceIndex >= m_CaptureSequence.Count())
 		{
 			m_FullExportCompleted = true;
+			if (m_AutomaticExportActive) m_AutoState = AUTO_STATE_EXPORT_COMPLETE;
 			WriteManifest();
-			Print(LOG_PREFIX + "FULL EXPORT complete. Copy the named screenshots into captures and run stitch_map.py.");
+			if (m_AutoState == AUTO_STATE_EXPORT_COMPLETE) m_AutomaticExportActive = false;
+			Print(LOG_PREFIX + "FULL EXPORT complete. Run stitch_map.py on the session.");
 			return;
 		}
 		WriteManifest();
+		if (m_AutomaticExportActive)
+		{
+			m_AutoRequestId = m_CaptureSequenceIndex + 1;
+			m_AutoState = AUTO_STATE_SETTLING;
+			Print(LOG_PREFIX + string.Format("[AutoCapture] advancing to grid=%1,%2 request=%3", m_CaptureSequence.Get(m_CaptureSequenceIndex).GridX, m_CaptureSequence.Get(m_CaptureSequenceIndex).GridZ, m_AutoRequestId));
+		}
 		MoveToCurrentCaptureSlot();
 	}
 
 	protected void MoveToPreviousCapture()
 	{
 		if (!m_FullExportActive) return;
+		if (m_AutomaticExportActive) return;
 		if (m_FullExportCompleted)
 		{
 			m_FullExportCompleted = false;
@@ -397,14 +652,41 @@ class NoronhaMapExporter
 		Print(LOG_PREFIX + "Manifest: " + m_SessionDirectory + "/manifest.json");
 	}
 
+	protected bool WriteCaptureRequest()
+	{
+		NoronhaMapExporterTile slot = m_CaptureSequence.Get(m_CaptureSequenceIndex);
+		string path = m_SessionDirectory + "/capture_request.json";
+		FileHandle file = OpenFile(path, FileMode.WRITE);
+		if (file == 0)
+		{
+			m_AutoState = AUTO_STATE_CAPTURE_FAILED;
+			Print(LOG_PREFIX + "ERROR: could not write capture_request.json.");
+			return false;
+		}
+		string text = "{\n";
+		text += "  \"protocolVersion\": 1,\n";
+		text += "  \"sessionId\": \"" + m_SessionId + "\",\n";
+		text += string.Format("  \"requestId\": %1,\n  \"tileIndex\": %2,\n  \"tileCount\": %3,\n", m_AutoRequestId, slot.Index, m_CaptureSequence.Count());
+		text += string.Format("  \"gridX\": %1,\n  \"gridZ\": %2,\n  \"filename\": \"%3\",\n", slot.GridX, slot.GridZ, slot.Filename);
+		text += string.Format("  \"requestedCenter\": {\"x\": %1, \"z\": %2},\n", m_CurrentTile.RequestedCenter[0], m_CurrentTile.RequestedCenter[2]);
+		text += string.Format("  \"actualCenter\": {\"x\": %1, \"z\": %2},\n", m_CurrentTile.GetMapPos[0], m_CurrentTile.GetMapPos[2]);
+		text += string.Format("  \"bounds\": {\"left\": %1, \"right\": %2, \"bottom\": %3, \"top\": %4},\n", m_CurrentTile.Left, m_CurrentTile.Right, m_CurrentTile.Bottom, m_CurrentTile.Top);
+		text += string.Format("  \"widget\": {\"x\": %1, \"y\": %2, \"width\": %3, \"height\": %4},\n", m_CurrentTile.WidgetPixelX, m_CurrentTile.WidgetPixelY, m_CurrentTile.WidgetPixelWidth, m_CurrentTile.WidgetPixelHeight);
+		text += "  \"status\": \"CAPTURE_READY\"\n}";
+		FPrint(file, text);
+		CloseFile(file);
+		return true;
+	}
+
 	protected string BuildManifest(string validation)
 	{
 		string text = "{\n";
-		text += "  \"version\": 1,\n  \"world\": \"Noronha\",\n";
-		text += string.Format("  \"worldBounds\": {\"left\": %1, \"right\": %2, \"bottom\": %3, \"top\": %4},\n", WORLD_MIN_X, WORLD_MAX_X, WORLD_MIN_Z, WORLD_MAX_Z);
-		text += string.Format("  \"exportScale\": %1,\n  \"overlapFraction\": %2,\n", EXPORT_SCALE, TILE_OVERLAP_FRACTION);
-		text += string.Format("  \"grid\": {\"columns\": %1, \"rows\": %2, \"total\": %3, \"traversal\": \"serpentine north-to-south\"},\n", m_GridColumns, m_GridRows, m_CaptureSequence.Count());
+		text += "  \"version\": 2,\n  \"world\": \"" + m_Config.WorldName + "\",\n";
+		text += string.Format("  \"worldBounds\": {\"left\": %1, \"right\": %2, \"bottom\": %3, \"top\": %4},\n", GetManifestWorldLeft(), GetManifestWorldRight(), GetManifestWorldBottom(), GetManifestWorldTop());
+		text += string.Format("  \"exportScale\": %1,\n  \"overlapFraction\": %2,\n", m_Config.ExportScale, m_Config.OverlapFraction);
+		text += string.Format("  \"grid\": {\"columns\": %1, \"rows\": %2, \"total\": %3, \"traversal\": \"serpentine north-to-south\"},\n", m_ActiveGridColumns, m_ActiveGridRows, m_CaptureSequence.Count());
 		text += string.Format("  \"sessionDirectory\": \"%1\",\n  \"captureDirectory\": \"%1/captures\",\n", m_SessionDirectory);
+		text += string.Format("  \"automaticCapture\": %1,\n  \"sessionId\": \"%2\",\n", BoolJson(m_AutomaticExportActive || m_AutoState == AUTO_STATE_EXPORT_COMPLETE), m_SessionId);
 		text += string.Format("  \"captureComplete\": %1,\n  \"valid\": %2,\n  \"validationMessage\": \"%3\",\n", BoolJson(m_CapturedTiles.Count() == m_CaptureSequence.Count()), BoolJson(validation == "PASS"), validation);
 		text += "  \"capturedCoverage\": " + GetCapturedCoverageJson() + ",\n";
 		text += "  \"tiles\": [\n";
@@ -416,6 +698,30 @@ class NoronhaMapExporter
 		}
 		text += "  ]\n}";
 		return text;
+	}
+
+	protected float GetManifestWorldLeft()
+	{
+		if (m_AutoSmokeActive && m_CapturedTiles.Count() > 0) return m_CapturedTiles.Get(0).Left;
+		return m_Config.WorldMinX;
+	}
+
+	protected float GetManifestWorldRight()
+	{
+		if (m_AutoSmokeActive && m_CapturedTiles.Count() > 0) return m_CapturedTiles.Get(m_CapturedTiles.Count() - 1).Right;
+		return m_Config.WorldMaxX;
+	}
+
+	protected float GetManifestWorldBottom()
+	{
+		if (m_AutoSmokeActive && m_CapturedTiles.Count() > 0) return m_CapturedTiles.Get(0).Bottom;
+		return m_Config.WorldMinZ;
+	}
+
+	protected float GetManifestWorldTop()
+	{
+		if (m_AutoSmokeActive && m_CapturedTiles.Count() > 0) return m_CapturedTiles.Get(m_CapturedTiles.Count() - 1).Top;
+		return m_Config.WorldMaxZ;
 	}
 
 	protected string GetCapturedCoverageJson()
@@ -460,7 +766,7 @@ class NoronhaMapExporter
 			if (Absolute(tile.GetScale - first.GetScale) > CONSISTENCY_TOLERANCE || Absolute(tile.VisibleWorldWidth - first.VisibleWorldWidth) > CONSISTENCY_TOLERANCE || Absolute(tile.VisibleWorldHeight - first.VisibleWorldHeight) > CONSISTENCY_TOLERANCE || Absolute(tile.WidgetPixelWidth - first.WidgetPixelWidth) > CONSISTENCY_TOLERANCE || Absolute(tile.WidgetPixelHeight - first.WidgetPixelHeight) > CONSISTENCY_TOLERANCE)
 				return "INVALID_VIEWPORT";
 		}
-		if (left > WORLD_MIN_X + CONSISTENCY_TOLERANCE || right < WORLD_MAX_X - CONSISTENCY_TOLERANCE || bottom > WORLD_MIN_Z + CONSISTENCY_TOLERANCE || top < WORLD_MAX_Z - CONSISTENCY_TOLERANCE) return "INVALID_COVERAGE";
+		if (!m_AutoSmokeActive && (left > m_Config.WorldMinX + CONSISTENCY_TOLERANCE || right < m_Config.WorldMaxX - CONSISTENCY_TOLERANCE || bottom > m_Config.WorldMinZ + CONSISTENCY_TOLERANCE || top < m_Config.WorldMaxZ - CONSISTENCY_TOLERANCE)) return "INVALID_COVERAGE";
 		if (Absolute(first.MetersPerPixelX - first.MetersPerPixelZ) > SQUARE_PIXEL_TOLERANCE) return "INVALID_NON_SQUARE_PIXELS";
 		return "PASS";
 	}
@@ -526,10 +832,12 @@ class NoronhaMapExporter
 	protected void UpdateDebugText()
 	{
 		if (!m_DebugVisible || !m_DebugText || !m_CurrentTile) return;
-		string text = "Noronha Map Exporter - DEBUG\n";
+		string text = "DayZ Map Exporter - DEBUG\n";
 		if (m_FullExportActive)
 		{
-			if (m_CaptureReady) text += "FULL EXPORT | CAPTURE READY\n";
+			if (m_AutomaticExportActive && m_AutoState == AUTO_STATE_WAITING_FOR_ACK) text += "AUTO EXPORT | WAITING FOR ACK\n";
+			else if (m_AutomaticExportActive && m_AutoState == AUTO_STATE_CAPTURE_FAILED) text += "AUTO EXPORT | FAILED (F9 retry / F10 abort)\n";
+			else if (m_CaptureReady) text += "FULL EXPORT | CAPTURE READY\n";
 			else text += "FULL EXPORT | STABILIZING\n";
 			text += string.Format("Tile %1 / %2 | Grid: %3,%4\n", m_CaptureSequenceIndex + 1, m_CaptureSequence.Count(), m_GridX, m_GridZ);
 			if (m_CaptureSequenceIndex >= 0 && m_CaptureSequenceIndex < m_CaptureSequence.Count()) text += "Expected: " + m_CaptureSequence.Get(m_CaptureSequenceIndex).Filename + "\n";
@@ -579,7 +887,7 @@ class NoronhaMapExporter
 
 	protected string GetFilename(int gridX, int gridZ)
 	{
-		return string.Format("noronha_x%1_z%2.png", Pad2(gridX), Pad2(gridZ));
+		return string.Format("%1_x%2_z%3.png", m_Config.OutputPrefix, Pad2(gridX), Pad2(gridZ));
 	}
 
 	protected string Pad2(int value)

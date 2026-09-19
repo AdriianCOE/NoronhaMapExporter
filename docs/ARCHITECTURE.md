@@ -9,7 +9,7 @@ ScreenToMap at the four widget corners
     ↓
 world-space bounds and capture manifest
     ↓
-manual full-frame screenshots
+capture request / ACK (automatic) or manual full-frame screenshots
     ↓
 Python geometric stitcher
     ↓
@@ -35,6 +35,7 @@ It does not capture DayZ, call render APIs, or compare image features.
 - The Z-to-image-Y sign is derived from each tile's `topLeft` and
   `bottomLeft` corners. It is never assumed.
 
-The validated Noronha world extent is `X=0..10240`, `Z=0..10240` metres. The
-final crop uses those exact world limits only after the larger capture canvas
-is complete.
+The active terrain extent comes from ignored profile configuration. The final
+crop uses those configured limits only after the larger capture canvas is
+complete. The validated Noronha extent was `X=0..10240`, `Z=0..10240` metres;
+it is documentation only.

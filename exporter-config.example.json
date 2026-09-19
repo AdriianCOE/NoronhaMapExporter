@@ -1,0 +1,15 @@
+{
+  "WorldName": "custom-terrain",
+  "WorldSize": 0,
+  "WorldMinX": 0,
+  "WorldMaxX": 0,
+  "WorldMinZ": 0,
+  "WorldMaxZ": 0,
+  "ExportScale": 0.33,
+  "OverlapFraction": 0.10,
+  "OutputPrefix": "map",
+  "AutoCaptureEnabled": true,
+  "StabilizationFrames": 2,
+  "StabilizationTolerance": 0.01,
+  "CaptureTimeoutSeconds": 30
+}

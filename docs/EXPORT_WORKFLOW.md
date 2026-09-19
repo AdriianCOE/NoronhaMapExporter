@@ -13,6 +13,10 @@
 | --- | --- |
 | `Ctrl+F8` | Open or close the exporter |
 | `F6` | Start a new full-export session |
+| `F8` | Start automatic export (helper required) |
+| `F5` | Run automatic 2×2 smoke test |
+| `F9` | Retry the failed/timeout automatic tile |
+| `F10` | Abort automatic export without advancing |
 | `N` | Confirm the current screenshot and advance |
 | `B` | Return to the previous full-export tile |
 | `F7` | Toggle DEBUG/CLEAN overlay |
@@ -32,6 +36,17 @@
 5. Press `N` to record that tile and move to the next one.
 6. After the final `N`, find the session's `manifest.json` in the configured
    DayZ profile directory and copy all requested images to `captures/`.
+
+## Automatic capture
+
+Start `capture-helper` with the profile's `DayZMapExporter/map-exports`
+directory, then press `F5` for the initial 2×2 smoke test. After four unique
+PNGs and matching ACKs, use `F8` for the full world. The manifest records the
+four smoke bounds and can be stitched normally. Automatic mode forces CLEAN,
+waits for stabilization, and does not advance on a timeout or error.
+
+For failure, use `F9` to send a new request for the same stable tile, use
+`F10` to abort, or return to the preserved manual `F6`/screenshot/`N` flow.
 
 ## Stitch
 

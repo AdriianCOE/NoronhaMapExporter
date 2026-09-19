@@ -23,6 +23,13 @@ if (-not (Test-Path -LiteralPath $mission)) { throw "Mission not found: $mission
 if (-not (Test-Path -LiteralPath $exporterPbo)) { throw "Exporter build not found: $exporterPbo. Run .\scripts\build.ps1 first." }
 
 New-Item -ItemType Directory -Force -Path $ProfileDirectory | Out-Null
+$exporterRuntimeDirectory = Join-Path $ProfileDirectory 'DayZMapExporter'
+$exporterConfig = Join-Path $exporterRuntimeDirectory 'exporter-config.json'
+if (-not (Test-Path -LiteralPath $exporterConfig)) {
+    New-Item -ItemType Directory -Force -Path $exporterRuntimeDirectory | Out-Null
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'exporter-config.example.json') -Destination $exporterConfig
+    Write-Warning "Created $exporterConfig. Set the terrain world bounds/worldSize before opening the exporter."
+}
 $mods = @($NoronhaModPath) + @($AdditionalModPaths) + @($exporterPackage)
 $mods = @($mods | Where-Object { $_ })
 foreach ($mod in $mods) {

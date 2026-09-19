@@ -2,7 +2,19 @@
 
 ## Baseline
 
-Status: full export pipeline validated.
+Status: automatic lossless capture validated.
+
+The interactive 2×2 automatic smoke completed in one session with request IDs
+1 through 4, matching `OK` ACKs, four unique 1920×1080 RGB PNGs, and a
+successful geometric stitch. The helper is idempotent: reprocessing a request
+reuses its receipt without recapturing or advancing the exporter. Runtime
+sessions, captures, hashes, and local launcher paths remain outside Git.
+
+## Next recorded experiment
+
+`Detail Scale Audit`: capture the same location at multiple configured
+`MapWidget.SetScale` values to determine when buildings and other additional
+details appear. It is deliberately not part of this baseline.
 
 | Item | Validated baseline |
 | --- | --- |
@@ -35,6 +47,10 @@ from `ScreenToMap` at runtime.
   floating-point offsets at a world edge.
 - The stitcher uses recorded world bounds and overlap midpoints, never visual
   feature matching.
+- The ACK schema uses the helper's lower-camel-case JSON field names; the
+  addon removes the consumed ACK before publishing the next request.
+- The helper writes opaque RGB PNGs so geometric compositing never receives
+  transparent screen-capture pixels.
 
 ## Deliberate exclusions
 

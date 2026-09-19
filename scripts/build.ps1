@@ -13,36 +13,33 @@ if (-not (Test-Path -LiteralPath $ConfigPath)) {
 
 . $ConfigPath
 
-if (-not $DayZToolsPath) { throw 'DayZToolsPath is not configured.' }
-$addonBuilder = Join-Path $DayZToolsPath 'Bin\AddonBuilder\AddonBuilder.exe'
-$cfgConvert = Join-Path $DayZToolsPath 'Bin\CfgConvert\CfgConvert.exe'
+if (-not $RaGDayZToolsPath) { throw 'RaGDayZToolsPath is not configured.' }
+if (-not $PythonPath) { $PythonPath = 'python' }
+$ragBuilder = Join-Path $RaGDayZToolsPath 'rag_pbo_builder_gui.py'
 $sourceDirectory = Join-Path $repoRoot 'addon'
 
 if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter-dev\Addons'
 }
 
-if (-not (Test-Path -LiteralPath $addonBuilder)) { throw "AddonBuilder not found: $addonBuilder" }
-if (-not (Test-Path -LiteralPath $cfgConvert)) { throw "CfgConvert not found: $cfgConvert" }
-
-& $cfgConvert -test (Join-Path $sourceDirectory 'config.cpp')
-if ($LASTEXITCODE -ne 0) { throw "CfgConvert validation failed with exit code $LASTEXITCODE" }
-
-& $cfgConvert -bin -dst (Join-Path $sourceDirectory 'config.bin') (Join-Path $sourceDirectory 'config.cpp')
-if ($LASTEXITCODE -ne 0) { throw "CfgConvert binarization failed with exit code $LASTEXITCODE" }
-
-New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
-& $addonBuilder $sourceDirectory $OutputDirectory '-packonly'
-if ($LASTEXITCODE -ne 0) { throw "AddonBuilder failed with exit code $LASTEXITCODE" }
-
-# AddonBuilder derives its PBO name from the local source directory ("addon").
-# Keep the runtime-facing package name stable without changing the source layout.
-$generatedPbo = Join-Path $OutputDirectory 'addon.pbo'
-$namedPbo = Join-Path $OutputDirectory 'NoronhaMapExporter.pbo'
-if (-not (Test-Path -LiteralPath $generatedPbo)) { throw "Expected AddonBuilder output was not created: $generatedPbo" }
-if (Test-Path -LiteralPath $namedPbo) { Remove-Item -LiteralPath $namedPbo -Force }
-Move-Item -LiteralPath $generatedPbo -Destination $namedPbo
-
 $packageRoot = Split-Path -Parent $OutputDirectory
+if (-not (Test-Path -LiteralPath $ragBuilder)) { throw "RaG PBO Builder source not found: $ragBuilder" }
+if (-not (Get-Command $PythonPath -ErrorAction SilentlyContinue) -and -not (Test-Path -LiteralPath $PythonPath)) { throw "Python executable not found: $PythonPath" }
+
+& $PythonPath $ragBuilder build `
+    --source $sourceDirectory `
+    --output $packageRoot `
+    --project-root 'P:' `
+    --temp (Join-Path $repoRoot '.rag-temp') `
+    --pbo-name 'NoronhaMapExporter.pbo' `
+    --no-binarize `
+    --no-convert-config `
+    --no-sign `
+    --preflight `
+    --force
+if ($LASTEXITCODE -ne 0) { throw "RaG PBO Builder failed with exit code $LASTEXITCODE" }
+
+$namedPbo = Join-Path $OutputDirectory 'NoronhaMapExporter.pbo'
+if (-not (Test-Path -LiteralPath $namedPbo)) { throw "Expected RaG PBO output was not created: $namedPbo" }
 Copy-Item -LiteralPath (Join-Path $sourceDirectory 'mod.cpp') -Destination (Join-Path $packageRoot 'mod.cpp') -Force
-Write-Host "Built NoronhaMapExporter in $packageRoot"
+Write-Host "Built NoronhaMapExporter with RaG PBO Builder in $packageRoot"

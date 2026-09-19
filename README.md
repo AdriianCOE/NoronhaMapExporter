@@ -1,7 +1,8 @@
-# Noronha Map Exporter
+# DayZ Map Exporter
 
-Development tools for exporting and stitching the native DayZ 2D map of the
-Fernando de Noronha custom terrain as a georeferenced raster.
+Development tools for exporting and stitching the native DayZ 2D map of a
+custom terrain as a georeferenced raster. Fernando de Noronha is the validated
+example terrain, not a hardcoded runtime requirement.
 
 The addon controls DayZ's `MapWidget`, positions deterministic viewports with
 `SetScale` and `SetMapPos`, records real world-space bounds with
@@ -30,7 +31,7 @@ in Git.
 ## Dependencies
 
 - DayZ and `DayZDiag_x64.exe`
-- DayZ Tools (`AddonBuilder` and `CfgConvert`)
+- [RaG DayZ Tools](https://github.com/Tyson89/RaG-DayZ-Tools) and Python 3
 - a compatible Fernando de Noronha terrain build, provided separately
 - any terrain dependencies required by that build (for example `Noronha_Items`)
 - Python 3 and Pillow (`stitcher/requirements.txt`)
@@ -49,17 +50,61 @@ python -m venv .venv
 pip install -r .\stitcher\requirements.txt
 
 Copy-Item .\config.example.ps1 .\config.local.ps1
-# Edit config.local.ps1 with this PC's DayZ, DayZ Tools, terrain, and dependency paths.
+# Edit config.local.ps1 with this PC's DayZ, RaG DayZ Tools, terrain, and dependency paths.
 
 .\scripts\build.ps1
 .\scripts\run-offline.ps1
 ```
 
+On first launch the launcher copies `exporter-config.example.json` to the
+ignored profile path `DayZMapExporter/exporter-config.json`. Set its `WorldName`,
+`WorldSize`, world bounds, `ExportScale`, overlap, output prefix, and auto
+capture values for the selected terrain. No PC-specific path belongs in Git.
+
 The launcher creates an ignored local profile directory and loads the terrain,
 configured dependencies, the freshly built exporter, and
 `mission/dayzOffline.Noronha`.
 
-## Capture and stitch
+`scripts/build.ps1` uses RaG PBO Builder's CLI with preflight and produces
+`build/@NoronhaMapExporter-dev/Addons/NoronhaMapExporter.pbo`. This script
+intentionally disables Binarize, CfgConvert, and signing for the exporter
+because it contains only script/layout/config assets and this PC's DayZ Tools
+installation does not include those executables. Terrain builds remain a
+separate workflow and need a complete DayZ Tools installation.
+
+## Automatic capture and stitch
+
+The Windows helper removes the screenshot/rename/next-tile loop:
+
+```text
+DayZ MapWidget → capture_request.json → Windows helper → PNG → capture_ack.json → next tile
+```
+
+Build and start it before beginning an automatic export:
+
+```powershell
+dotnet build .\capture-helper\DayZMapCapture.csproj -c Release
+dotnet run --project .\capture-helper\DayZMapCapture.csproj -c Release -- --sessions-root "<ProfileDirectory>\DayZMapExporter\map-exports"
+```
+
+It requires .NET 8 SDK or later and Windows. It finds `DayZDiag_x64.exe` or
+`DayZ_x64.exe`, gets its real client rectangle with Win32, crops the actual
+MapWidget rectangle from that client area, and writes lossless PNGs to the
+active session's `captures/` folder. DayZ must remain visible, unminimized,
+and unobstructed during capture.
+
+`F8` starts AUTO EXPORT; `F5` runs the mandatory 2×2 AUTO SMOKE; `F9` retries
+only a failed/timeout tile; `F10` aborts without advancing. AUTO forces CLEAN
+and waits for stabilized position, scale, viewport bounds, and square pixels.
+It only advances when session ID, request ID, filename, dimensions, and an
+`OK` ACK with SHA-256 match. Existing valid captures are acknowledged
+idempotently; unsafe filenames and dimension mismatches are rejected.
+
+The helper writes ACKs with temp-and-replace. The addon writes a complete JSON
+request in one operation; the helper treats parse/IO failures as not-ready and
+retries, so it never acts on a partial request.
+
+## Manual capture and stitch
 
 1. In DayZDiag, press `Ctrl+F8` and wait for calibration.
 2. Press `F6` to begin the full export.

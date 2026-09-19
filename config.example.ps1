@@ -3,6 +3,8 @@
 
 $DayZPath = 'C:\Path\To\DayZ'
 $DayZToolsPath = 'C:\Path\To\DayZ Tools'
+$RaGDayZToolsPath = 'C:\Path\To\RaG-DayZ-Tools'
+$PythonPath = 'python'
 $NoronhaModPath = 'D:\DayZMods\@FernandoDeNoronha'
 
 # Add compatible dependencies required by the chosen Noronha build here.
