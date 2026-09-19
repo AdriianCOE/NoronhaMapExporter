@@ -42,6 +42,16 @@ function Find-CompletedSession($SessionsRoot, [datetime]$StartedAt, [double]$Sca
     return $null
 }
 
+function Wait-ForCompletedSession($SessionsRoot, [datetime]$StartedAt, [double]$Scale, [int]$TimeoutSeconds) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $session = Find-CompletedSession $SessionsRoot $StartedAt $Scale
+        if ($session) { return $session }
+        Start-Sleep -Seconds 2
+    }
+    return $null
+}
+
 function Stop-ExistingCaptureHelpers([string]$HelperDll) {
     $escapedDll = [regex]::Escape($HelperDll)
     $matches = Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue |
@@ -85,7 +95,7 @@ $helperDll = Join-Path $PSScriptRoot 'capture-helper\bin\Release\net8.0-windows\
 Stop-ExistingCaptureHelpers $helperDll
 & dotnet build (Join-Path $PSScriptRoot 'capture-helper\DayZMapCapture.csproj') -c Release | Tee-Object -FilePath (Join-Path $logs 'helper-build.log')
 if ($LASTEXITCODE -ne 0) { throw "Capture helper build failed with exit code $LASTEXITCODE" }
-& (Join-Path $PSScriptRoot 'scripts\build.ps1') -CartographyStyle public-config -CartographyOverridePath $capabilities.cartographyOverridePath -LocationOverridePath $capabilities.locationOverridePath -RaGDayZToolsPath $validation.ragDayZTools -PythonPath $python | Tee-Object -FilePath (Join-Path $logs 'addon-build.log')
+& (Join-Path $PSScriptRoot 'scripts\build.ps1') -CartographyStyle public-config -CartographyOverridePath $capabilities.cartographyOverridePath -LocationOverridePath $capabilities.locationOverridePath -DayZToolsPath $validation.dayzTools | Tee-Object -FilePath (Join-Path $logs 'addon-build.log')
 if ($LASTEXITCODE -ne 0) { throw "Exporter addon build failed with exit code $LASTEXITCODE" }
 
 $sessionsRoot = Join-Path $validation.profiles 'DayZMapExporter\map-exports'
@@ -110,9 +120,10 @@ try {
         $launchArgs = @('-mod=' + ($mods -join ';'), '-mission=' + $validation.mission, '-profiles=' + $validation.profiles, '-filePatching', '-window', '-nopause', '-dologs', '-scriptDebug=true')
         $startedAt = Get-Date
         $dayz = Start-Process -FilePath (Join-Path $validation.dayz 'DayZDiag_x64.exe') -WorkingDirectory $validation.dayz -ArgumentList $launchArgs -PassThru
-        Write-Host "[$($export.Name)] In DayZ: enter the mission, press Ctrl+F8, then F8 once. Wait for completion."
-        Read-Host "Press Enter here only after the automatic export has completed" | Out-Null
-        $session = Find-CompletedSession $sessionsRoot $startedAt $export.Scale
+        $waitSeconds = [Math]::Max(300, [int]$validation.config.capture.timeoutSeconds * 20)
+        Write-Host "[$($export.Name)] In DayZ: enter the mission, press Ctrl+F8, then F8 once."
+        Write-Host "[$($export.Name)] Waiting up to $waitSeconds seconds for a valid capture manifest; no console confirmation is needed."
+        $session = Wait-ForCompletedSession $sessionsRoot $startedAt $export.Scale $waitSeconds
         if (-not $session) { throw "No valid completed $($export.Name) session was found after this launch. Its output was not copied." }
         & $python (Join-Path $PSScriptRoot 'stitcher\stitch_map.py') $session | Tee-Object -FilePath (Join-Path $logs ($export.Name + '-stitch.log'))
         if ($LASTEXITCODE -ne 0) { throw "Stitch failed for $($export.Name)." }
