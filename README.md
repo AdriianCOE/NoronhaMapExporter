@@ -72,6 +72,19 @@ because it contains only script/layout/config assets and this PC's DayZ Tools
 installation does not include those executables. Terrain builds remain a
 separate workflow and need a complete DayZ Tools installation.
 
+For the isolated cartography audit, the build can stage a named
+`RscMapControl` candidate without mutating the source's `Raw` baseline:
+
+```powershell
+.\scripts\build.ps1 -CartographyStyle combined-v1
+```
+
+The available candidates are `raw`, `no-grid`, `no-labels`, `no-icons`,
+`reduced-vegetation`, `soft-contours`, `palette`, and `combined-v1`. DayZ
+binds this control when the MapWidget is created, so use a fresh client launch
+between candidates. The validated results and limitations are in
+[docs/CLEAN_CARTOGRAPHY_AUDIT.md](docs/CLEAN_CARTOGRAPHY_AUDIT.md).
+
 ## Automatic capture and stitch
 
 The Windows helper removes the screenshot/rename/next-tile loop:

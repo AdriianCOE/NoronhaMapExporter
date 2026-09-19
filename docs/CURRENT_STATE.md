@@ -50,6 +50,22 @@ reference store, records terrain/renderer/capture provenance, refuses to
 overwrite a reference, writes `masters.json`, and creates same-world native
 comparison crops. It never changes map styling or uses feature matching.
 
+## Clean Cartography Style Audit (2026-09-19)
+
+Status: completed as isolated automatic captures at `X=7800, Z=7200`; no
+full-world clean master was generated. The selected `CombinedV1` renderer
+removes the grid, reduces vegetation, softens contours and uses a restrained
+palette while preserving building footprints at scale `0.15`. Its `0.33`
+preview remains appropriate for overview use.
+
+The exact client accepted and visibly applied the grid, vegetation, contour
+and palette candidates. The tested native label and POI candidate fields did
+not visibly remove those features, so V1 intentionally keeps them rather
+than claiming a false clean result. The ignored runtime package contains all
+native PNGs, `comparison_all.png`, `raw_vs_clean_v1.png`, and `audit.json`.
+See [CLEAN_CARTOGRAPHY_AUDIT.md](CLEAN_CARTOGRAPHY_AUDIT.md) for hashes,
+request IDs, bounds, and the reproducible build command.
+
 | Item | Validated baseline |
 | --- | --- |
 | Runtime | DayZDiag with `dayzOffline.Noronha` |
