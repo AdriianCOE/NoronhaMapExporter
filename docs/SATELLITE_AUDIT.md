@@ -2,7 +2,7 @@
 
 ## Decision
 
-`SATELLITE_RENDER = SUPPORTED` for the validated local Noronha MapWidget. The product therefore supports `satmap.mode: "engine"` in `run-2d.ps1`, while retaining `satmap.mode: "source"` for a separately supplied satellite image.
+`SATELLITE_RENDER = SUPPORTED_WITH_LIMITATIONS` for the validated local Noronha MapWidget. The product supports `satmap.mode: "engine"` in `run-2d.ps1` as an aligned engine composite, while `satmap.mode: "source"` remains the standalone-satellite export path.
 
 ## Runtime evidence
 
@@ -11,13 +11,13 @@ Two fresh DayZDiag captures were made at the same detail-audit viewport (`X=7800
 | Check | Session | Result |
 | --- | --- | --- |
 | satellite forced | `2026-09-19_07-08-40_01` | terrain imagery visibly rendered below map layers |
-| satellite isolated | `2026-09-19_07-11-28_01` | imagery remained visible after grid, forest, contours, roads, tracks, and buildings were transparent |
+| satellite isolated | `2026-09-19_07-11-28_01` | imagery remained visible; grid and location labels disappeared, while roads, building footprints, vegetation symbols, and some object icons remained |
 
-The isolated capture proves imagery is an independent engine layer, not a palette side effect. It also shows that a terrain must provide satellite data for engine mode to be useful.
+The isolated capture proves imagery is an independent engine layer, not a palette side effect. It also establishes the practical limit: the tested map-control fields do not make a clean, standalone satellite raster on this build. A terrain must provide satellite data for engine mode to be useful.
 
 ## Implementation boundary
 
-The generated public map control requests full satellite alpha across the export scale range only when `satmap.mode` is `engine`. It does not contain an external tile provider, scraper, or projection system. In engine mode, DayZ owns alignment between imagery and the vector map.
+The generated public map control requests full satellite alpha across the export scale range only when `satmap.mode` is `engine`. It does not contain an external tile provider, scraper, or projection system. In engine mode, DayZ owns alignment between imagery and the remaining native vector layers.
 
 Source mode accepts a supplied image and preserves it unchanged as a PNG. It records the declared world size, but does not pretend to derive georeferencing from pixels. Registration and overlay ownership stay with the downstream map application.
 

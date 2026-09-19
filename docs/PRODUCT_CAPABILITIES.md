@@ -18,13 +18,13 @@
 | `contours` | normal/main contour visibility, colour, opacity |
 | `roads`, `tracks`, `buildings` | their respective map-rendered layer visibility |
 | `colors` | background, outside map, and sea colours |
-| `satmap.mode` | `engine` terrain imagery or separate `source` export |
+| `satmap.mode` | `engine` terrain-imagery composite or separate `source` export |
 
 The default example keeps vegetation and contours visible. Clean means removing interface clutter, not flattening terrain information.
 
 ## Known engine limit
 
-Object icons such as certain hospitals, fuel stations, or towers may remain. They resolve through DayZ's runtime `MapDefaults`; reopening or subclassing it from an addon caused config conflicts or had no observable runtime effect. The exporter intentionally does not attempt unsafe overrides. If a caller adds `mapObjectIcons: false`, generation reports that it was not applied.
+Object icons such as certain hospitals, fuel stations, or towers may remain. Some roads, building footprints, and vegetation symbols can also remain in an engine-satellite composite. They resolve through DayZ's runtime `MapDefaults`; reopening or subclassing it from an addon caused config conflicts or had no observable runtime effect. The exporter intentionally does not attempt unsafe overrides. If a caller adds `mapObjectIcons: false`, generation reports that it was not applied.
 
 ## Outputs
 

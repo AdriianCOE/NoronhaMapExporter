@@ -73,10 +73,10 @@ The examples are compact viewport JPEGs only. See [images/examples](images/examp
 
 There are two explicit choices:
 
-- `"satmap": { "mode": "engine" }` uses imagery provided by the loaded terrain in DayZ's MapWidget. It is captured with the 2D export and aligns automatically because the engine owns both layers.
+- `"satmap": { "mode": "engine" }` uses imagery provided by the loaded terrain in DayZ's MapWidget. It is captured with the 2D export and aligns automatically because the engine owns both layers. It is an engine-composite map: residual native layers may remain.
 - `"satmap": { "mode": "source", "source": "..." }` is an independent source image. `run-satmap.ps1` copies it to a validated lossless PNG and records a hash and declared world extent. It does not invent projection, crop, scale, recolour, or alignment.
 
-See [docs/SATELLITE_AUDIT.md](docs/SATELLITE_AUDIT.md) for runtime evidence and the integration boundary.
+Use `source` for a standalone satellite raster. See [docs/SATELLITE_AUDIT.md](docs/SATELLITE_AUDIT.md) for runtime evidence and the integration boundary.
 
 ## Guarantees and limits
 
