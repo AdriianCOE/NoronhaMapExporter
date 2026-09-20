@@ -32,6 +32,10 @@ if ($LocationOverridePath -and -not (Test-Path -LiteralPath $LocationOverridePat
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter\Addons' }
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
 $packageRoot = Split-Path -Parent $OutputDirectory
+$staleAddonDirectory = Join-Path $OutputDirectory 'NoronhaMapExporter'
+if (Test-Path -LiteralPath $staleAddonDirectory -PathType Container) {
+    Remove-Item -LiteralPath $staleAddonDirectory -Recurse -Force
+}
 # AddonBuilder derives the PBO prefix from the source directory name when
 # packing without a project file. Keep that name aligned with CfgMods' script
 # path; otherwise the config loads but mission scripts are not discoverable.
