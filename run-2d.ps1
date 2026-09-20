@@ -67,6 +67,11 @@ function Resolve-ConfiguredPath([string]$Value, [string]$ConfigPath) {
     return [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $ConfigPath) $Value))
 }
 
+function Get-ConfigValue($Object, [string]$Name, $Default) {
+    if ($null -eq $Object -or $null -eq $Object.PSObject.Properties[$Name]) { return $Default }
+    return $Object.$Name
+}
+
 function Assert-DayZDiagClosed([string]$DayZDirectory) {
     $expected = [System.IO.Path]::GetFullPath((Join-Path $DayZDirectory 'DayZDiag_x64.exe'))
     $running = Get-Process DayZDiag_x64 -ErrorAction SilentlyContinue |
@@ -85,7 +90,7 @@ $previewOutput = Join-Path $output2d 'previews'
 $touristOutput = Join-Path $validation.output (Join-Path $validation.worldName 'tourist')
 $logs = Join-Path $validation.output (Join-Path $validation.worldName 'logs')
 New-Item -ItemType Directory -Force -Path $output2d, $previewOutput, $logs | Out-Null
-if ($validation.config.hillshade -and $validation.config.hillshade.enabled) { New-Item -ItemType Directory -Force -Path $touristOutput | Out-Null }
+if ($validation.touristEnabled) { New-Item -ItemType Directory -Force -Path $touristOutput | Out-Null }
 
 $generation = Join-Path $PSScriptRoot ('.runtime\public-config\' + $validation.worldName)
 & (Join-Path $PSScriptRoot 'scripts\generate-public-cartography.ps1') -ConfigPath $validation.configPath -OutputDirectory $generation | Out-Host
@@ -133,11 +138,41 @@ try {
         Copy-Item -LiteralPath $preview -Destination (Join-Path $previewOutput ($export.Name + '.jpg')) -Force
         $manifest = Get-Content -LiteralPath (Join-Path $session 'manifest.json') -Raw | ConvertFrom-Json
         $finalExports += [ordered]@{ name = $export.Name; scale = $export.Scale; sourceSession = $session; dimensions = @{ width = $manifest.stitch.width; height = $manifest.stitch.height }; metersPerPixel = $manifest.stitch.metersPerPixel; sha256 = (Get-FileHash -LiteralPath $master -Algorithm SHA256).Hash.ToLowerInvariant() }
-        if ($validation.hillshadePath) {
+        if ($validation.touristEnabled) {
             $hillshade = $validation.config.hillshade
+            $ocean = $validation.config.ocean
+            $slopeMask = $validation.config.slopeMask
             $touristMaster = Join-Path $touristOutput ($export.Name + '_hillshade.png')
             $touristManifest = Join-Path $touristOutput ($export.Name + '_hillshade.manifest.json')
-            & $python (Join-Path $PSScriptRoot 'stitcher\apply_hillshade.py') --heightmap $validation.hillshadePath --master (Join-Path $output2d ($export.Name + '.png')) --output $touristMaster --manifest $touristManifest --world-size $validation.worldSize --sea-level $hillshade.seaLevel --opacity $hillshade.opacity --elevation $(if ($hillshade.elevation) { $hillshade.elevation } else { 40 }) --slope-start $(if ($hillshade.slopeStart) { $hillshade.slopeStart } else { 5 }) --slope-full $(if ($hillshade.slopeFull) { $hillshade.slopeFull } else { 30 }) 2>&1 | Tee-Object -FilePath (Join-Path $logs ($export.Name + '-hillshade.log'))
+            $hillshadeEnabled = $hillshade -and [bool](Get-ConfigValue $hillshade 'enabled' $false)
+            $oceanEnabled = $ocean -and [bool](Get-ConfigValue $ocean 'enabled' $false)
+            $slopeMaskEnabled = $slopeMask -and [bool](Get-ConfigValue $slopeMask 'enabled' $false)
+            $compositeArgs = @(
+                '--heightmap', $validation.hillshadePath,
+                '--master', (Join-Path $output2d ($export.Name + '.png')),
+                '--output', $touristMaster,
+                '--manifest', $touristManifest,
+                '--world-size', $validation.worldSize,
+                '--sea-level', $hillshade.seaLevel,
+                '--opacity', (Get-ConfigValue $hillshade 'opacity' 0.25),
+                '--elevation', (Get-ConfigValue $hillshade 'elevation' 40),
+                '--slope-start', (Get-ConfigValue $hillshade 'slopeStartDeg' (Get-ConfigValue $hillshade 'slopeStart' 5)),
+                '--slope-full', (Get-ConfigValue $hillshade 'slopeFullDeg' (Get-ConfigValue $hillshade 'slopeFull' 30)),
+                '--hillshade-enabled', $hillshadeEnabled,
+                '--hillshade-slope-weighted', (Get-ConfigValue $hillshade 'slopeWeighted' $true),
+                '--ocean-enabled', $oceanEnabled,
+                '--ocean-color', (Get-ConfigValue $ocean 'color' '#C9DEE9'),
+                '--coast-halo-color', (Get-ConfigValue $ocean 'coastHaloColor' '#D7E8F0'),
+                '--coast-halo-width', (Get-ConfigValue $ocean 'coastHaloWidthPx' 6),
+                '--coast-stroke-color', (Get-ConfigValue $ocean 'coastStrokeColor' '#A7BDC8'),
+                '--coast-stroke-width', (Get-ConfigValue $ocean 'coastStrokeWidthPx' 1),
+                '--slope-mask-enabled', $slopeMaskEnabled,
+                '--slope-mask-color', (Get-ConfigValue $slopeMask 'color' '#7A7A7A'),
+                '--slope-mask-opacity', (Get-ConfigValue $slopeMask 'opacity' 0.12),
+                '--slope-mask-start', (Get-ConfigValue $slopeMask 'startDeg' 18),
+                '--slope-mask-full', (Get-ConfigValue $slopeMask 'fullDeg' 35)
+            )
+            & $python (Join-Path $PSScriptRoot 'stitcher\apply_hillshade.py') @compositeArgs 2>&1 | Tee-Object -FilePath (Join-Path $logs ($export.Name + '-hillshade.log'))
             if ($LASTEXITCODE -eq 0) { $touristExports += Get-Content -LiteralPath $touristManifest -Raw | ConvertFrom-Json }
             else { Write-Warning "Hillshade failed for $($export.Name); the clean 2D output was preserved." }
         }
@@ -150,5 +185,5 @@ finally {
     if (-not $helper.HasExited) { Stop-Process -Id $helper.Id -Force }
 }
 [ordered]@{ version = 1; world = $validation.worldName; worldSize = $validation.worldSize; cartography = $validation.config.cartography; satelliteMode = $validation.satmapMode; capabilities = $capabilities; exports = $finalExports } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $output2d 'manifest.json') -Encoding utf8
-if ($validation.hillshadePath) { [ordered]@{ version = 1; world = $validation.worldName; exports = $touristExports } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $touristOutput 'manifest.json') -Encoding utf8 }
+if ($validation.touristEnabled) { [ordered]@{ version = 2; world = $validation.worldName; exports = $touristExports } | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $touristOutput 'manifest.json') -Encoding utf8 }
 Write-Host "2D output written to $output2d"

@@ -100,7 +100,11 @@ output for later reference.
 ## Optional: hillshade and satellite
 
 Hillshade adds terrain relief to a separate copy of the clean 2D export; it
-never replaces the original map. It needs an authoritative ASC heightmap.
+never replaces the original map. The same authoritative ASC can also provide a
+soft ocean fill and a subtle slope mask for cliffs. The recommended tourist
+preset is in [`config.example.json`](config.example.json): 25% luminance
+hillshade, slope weighting from 5° to 30°, and a 12% cliff mask from 18° to
+35°.
 
 Satellite export is also separate and uses an explicit source raster. Neither
 option is required for a normal 2D export.

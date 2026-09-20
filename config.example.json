@@ -29,10 +29,30 @@
   },
   "satmap": { "mode": "source", "source": "D:/Maps/MyTerrain_satmap.png" },
   "hillshade": {
-    "enabled": false,
-    "mode": "multidirectional-slope-weighted",
+    "enabled": true,
+    "mode": "multidirectional",
     "heightmap": "D:/Maps/MyTerrain_heightmap.asc",
     "seaLevel": 0,
-    "opacity": 0.5
+    "opacity": 0.25,
+    "elevation": 40,
+    "blend": "luminance",
+    "slopeWeighted": true,
+    "slopeStartDeg": 5,
+    "slopeFullDeg": 30
+  },
+  "ocean": {
+    "enabled": true,
+    "color": "#C9DEE9",
+    "coastHaloColor": "#D7E8F0",
+    "coastHaloWidthPx": 6,
+    "coastStrokeColor": "#A7BDC8",
+    "coastStrokeWidthPx": 1
+  },
+  "slopeMask": {
+    "enabled": true,
+    "color": "#7A7A7A",
+    "opacity": 0.12,
+    "startDeg": 18,
+    "fullDeg": 35
   }
 }

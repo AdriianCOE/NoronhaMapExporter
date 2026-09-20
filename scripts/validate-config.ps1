@@ -11,6 +11,15 @@ function Get-Value($Object, [string]$Name, $Default = $null) {
     if ($null -eq $Object -or $null -eq $Object.PSObject.Properties[$Name]) { return $Default }
     return $Object.$Name
 }
+function Is-Enabled($Object) { return $null -ne $Object -and [bool](Get-Value $Object 'enabled' $false) }
+function Assert-HexColor($Object, [string]$Name, [string]$Label) {
+    $value = [string](Get-Value $Object $Name '')
+    if ($value -notmatch '^#[0-9A-Fa-f]{6}$') { Fail "$Label must be a #RRGGBB color." }
+}
+function Assert-Range($Object, [string]$Name, [string]$Label, [double]$Minimum, [double]$Maximum) {
+    try { $value = [double](Get-Value $Object $Name) } catch { Fail "$Label must be numeric." }
+    if ($value -lt $Minimum -or $value -gt $Maximum) { Fail "$Label must be between $Minimum and $Maximum." }
+}
 function Require-Value($Object, [string]$Name, [string]$Label, [string]$Hint) {
     $value = Get-Value $Object $Name
     if ($null -eq $value -or [string]::IsNullOrWhiteSpace([string]$value)) { Fail "$Label is required.`n$Hint" }
@@ -80,16 +89,47 @@ foreach ($export in $enabled) { if ([double]$export.scale -le 0) { Fail 'Each en
 $satmapMode = [string](Get-Value $config.satmap 'mode' 'source')
 if ($satmapMode -notin @('source', 'engine')) { Fail "satmap.mode '$satmapMode' must be 'source' or 'engine'." }
 
+$hillshade = $config.hillshade
+$ocean = $config.ocean
+$slopeMask = $config.slopeMask
+$hillshadeEnabled = Is-Enabled $hillshade
+$oceanEnabled = Is-Enabled $ocean
+$slopeMaskEnabled = Is-Enabled $slopeMask
+$touristEnabled = $hillshadeEnabled -or $oceanEnabled -or $slopeMaskEnabled
 $hillshadePath = $null
 $hillshadeWarning = $null
-if ($config.hillshade -and $config.hillshade.enabled) {
-    if ([string](Get-Value $config.hillshade 'mode' 'multidirectional-slope-weighted') -ne 'multidirectional-slope-weighted') { Fail "hillshade.mode must be 'multidirectional-slope-weighted'." }
-    if ([double](Get-Value $config.hillshade 'opacity' 0) -le 0 -or [double](Get-Value $config.hillshade 'opacity' 0) -gt 1) { Fail 'hillshade.opacity must be greater than zero and at most one.' }
-    if ($null -eq (Get-Value $config.hillshade 'seaLevel')) { Fail 'hillshade.seaLevel is required when hillshade.enabled is true.' }
-    $candidate = Require-Value $config.hillshade 'heightmap' 'hillshade.heightmap' 'Set it to the authoritative terrain ASC heightmap.'
-    Assert-NotPlaceholder $candidate 'hillshade.heightmap' 'Replace the example path or set hillshade.enabled to false.'
+
+if ($hillshadeEnabled) {
+    $hillshadeMode = [string](Get-Value $hillshade 'mode' 'multidirectional-slope-weighted')
+    if ($hillshadeMode -notin @('multidirectional', 'multidirectional-slope-weighted')) { Fail "hillshade.mode must be 'multidirectional' or 'multidirectional-slope-weighted'." }
+    if ([string](Get-Value $hillshade 'blend' 'luminance') -ne 'luminance') { Fail "hillshade.blend must be 'luminance'." }
+    Assert-Range $hillshade 'opacity' 'hillshade.opacity' 0.0 1.0
+    if ([double](Get-Value $hillshade 'opacity' 0) -le 0) { Fail 'hillshade.opacity must be greater than zero.' }
+    $slopeStart = [double](Get-Value $hillshade 'slopeStartDeg' (Get-Value $hillshade 'slopeStart' 5))
+    $slopeFull = [double](Get-Value $hillshade 'slopeFullDeg' (Get-Value $hillshade 'slopeFull' 30))
+    if ($slopeStart -lt 0 -or $slopeStart -ge $slopeFull) { Fail 'hillshade slope thresholds require 0 <= slopeStartDeg < slopeFullDeg.' }
+}
+if ($oceanEnabled) {
+    Assert-HexColor $ocean 'color' 'ocean.color'
+    if ($null -ne (Get-Value $ocean 'coastHaloColor')) { Assert-HexColor $ocean 'coastHaloColor' 'ocean.coastHaloColor' }
+    if ($null -ne (Get-Value $ocean 'coastStrokeColor')) { Assert-HexColor $ocean 'coastStrokeColor' 'ocean.coastStrokeColor' }
+    if ($null -ne (Get-Value $ocean 'coastHaloWidthPx')) { Assert-Range $ocean 'coastHaloWidthPx' 'ocean.coastHaloWidthPx' 0 64 }
+    if ($null -ne (Get-Value $ocean 'coastStrokeWidthPx')) { Assert-Range $ocean 'coastStrokeWidthPx' 'ocean.coastStrokeWidthPx' 0 16 }
+}
+if ($slopeMaskEnabled) {
+    Assert-HexColor $slopeMask 'color' 'slopeMask.color'
+    Assert-Range $slopeMask 'opacity' 'slopeMask.opacity' 0 1
+    $maskStart = [double](Get-Value $slopeMask 'startDeg' 18)
+    $maskFull = [double](Get-Value $slopeMask 'fullDeg' 35)
+    if ($maskStart -lt 0 -or $maskStart -ge $maskFull) { Fail 'slopeMask thresholds require 0 <= startDeg < fullDeg.' }
+}
+if ($touristEnabled) {
+    if ($null -eq $hillshade) { Fail 'hillshade is required when ocean or slopeMask is enabled because it supplies the authoritative ASC heightmap and sea level.' }
+    if ($null -eq (Get-Value $hillshade 'seaLevel')) { Fail 'hillshade.seaLevel is required when tourist composition is enabled.' }
+    $candidate = Require-Value $hillshade 'heightmap' 'hillshade.heightmap' 'Set it to the authoritative terrain ASC heightmap.'
+    Assert-NotPlaceholder $candidate 'hillshade.heightmap' 'Replace the example path or disable tourist composition.'
     $hillshadePath = Resolve-ConfigPath $candidate $configDirectory
     if (-not (Test-Path -LiteralPath $hillshadePath -PathType Leaf)) { Fail "Hillshade heightmap was not found:`n$hillshadePath" }
 }
 
-[pscustomobject]@{ config = $config; configPath = [System.IO.Path]::GetFullPath($ConfigPath); dayz = $dayz; dayzTools = $tools; mission = $mission; terrainMod = $terrain; profiles = $profiles; output = $output; worldName = $worldName; worldSize = $worldSize; satmapMode = $satmapMode; hillshadePath = $hillshadePath; hillshadeWarning = $hillshadeWarning }
+[pscustomobject]@{ config = $config; configPath = [System.IO.Path]::GetFullPath($ConfigPath); dayz = $dayz; dayzTools = $tools; mission = $mission; terrainMod = $terrain; profiles = $profiles; output = $output; worldName = $worldName; worldSize = $worldSize; satmapMode = $satmapMode; hillshadePath = $hillshadePath; hillshadeWarning = $hillshadeWarning; touristEnabled = $touristEnabled }
