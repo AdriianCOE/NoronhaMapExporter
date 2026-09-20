@@ -60,7 +60,10 @@ $stageConfigText = $stageConfigText.Replace('// CLEAN_LOCATION_OVERRIDE_PLACEHOL
 if ($LASTEXITCODE -ne 0) { throw "CfgConvert validation failed with exit code $LASTEXITCODE" }
 & $cfgConvert -bin -dst (Join-Path $stageSourceDirectory 'config.bin') $stageConfig
 if ($LASTEXITCODE -ne 0) { throw "CfgConvert binarization failed with exit code $LASTEXITCODE" }
-Remove-Item -LiteralPath $stageConfig, (Join-Path $stageSourceDirectory 'mod.cpp') -Force
+# DayZ reads CfgMods from the staged config.cpp when registering a local PBO.
+# Keep the generated config.cpp alongside config.bin; only mod.cpp belongs at
+# the package root and must stay out of the PBO.
+Remove-Item -LiteralPath (Join-Path $stageSourceDirectory 'mod.cpp') -Force
 & $addonBuilder $stageSourceDirectory $OutputDirectory '-packonly' '-clear'
 if ($LASTEXITCODE -ne 0) { throw "AddonBuilder failed with exit code $LASTEXITCODE" }
 

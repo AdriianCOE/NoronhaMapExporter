@@ -57,7 +57,7 @@
   map.getPane("cloudPane").style.pointerEvents = "none";
   githubLink.href = config.githubUrl || githubLink.href;
   workshopLink.href = config.workshopUrl || workshopLink.href;
-  const version = config.viewerVersion || "v1.0.0-rc.2";
+  const version = config.viewerVersion || "v1.0.0";
   viewerVersion.textContent = version;
   aboutVersion.textContent = version;
 
