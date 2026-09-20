@@ -117,7 +117,7 @@ if ($validation.hillshadeWarning) { Write-Warning $validation.hillshadeWarning }
 try {
     foreach ($export in $exports) {
         Write-ExporterConfig $validation $export.Scale
-        $launchArgs = @('-mod=' + ($mods -join ';'), '-mission=' + $validation.mission, '-profiles=' + $validation.profiles, '-filePatching', '-window', '-nopause', '-dologs', '-scriptDebug=true')
+        $launchArgs = @('-mod=' + ($mods -join ';'), '-mission=' + $validation.mission, '-profiles=' + $validation.profiles, '-filePatching', '-fullscreen', '-nopause', '-dologs', '-scriptDebug=true')
         $startedAt = Get-Date
         $dayz = Start-Process -FilePath (Join-Path $validation.dayz 'DayZDiag_x64.exe') -WorkingDirectory $validation.dayz -ArgumentList $launchArgs -PassThru
         $waitSeconds = [Math]::Max(300, [int]$validation.config.capture.timeoutSeconds * 20)
