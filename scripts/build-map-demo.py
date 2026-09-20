@@ -87,7 +87,9 @@ def build_layer(
                     for row in range(rows):
                         left = column * tile_size
                         top = row * tile_size
-                        tile = level.crop((left, top, min(left + tile_size, level.width), min(top + tile_size, level.height)))
+                        crop = level.crop((left, top, min(left + tile_size, level.width), min(top + tile_size, level.height)))
+                        tile = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
+                        tile.paste(crop, (0, 0))
                         save_tile(tile, tiles_root / layer.identifier / str(zoom) / str(column) / f"{row}.webp", zoom == max_zoom, quality)
                         tile_count += 1
 

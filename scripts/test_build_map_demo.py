@@ -39,6 +39,15 @@ class BuildMapDemoTests(unittest.TestCase):
             self.assertEqual(result["initialBounds"], [0, 0, 600, 400])
             self.assertEqual((result["sourceWidth"], result["sourceHeight"]), (600, 400))
 
+            generated_tiles = list((root / "tiles").rglob("*.webp"))
+            self.assertEqual(len(generated_tiles), result["tiles"])
+            for tile_path in generated_tiles:
+                with Image.open(tile_path) as tile:
+                    self.assertEqual(tile.size, (256, 256))
+
+            with Image.open(root / "tiles" / "tourist" / "2" / "2" / "1.webp") as edge_tile:
+                self.assertEqual(edge_tile.convert("RGBA").getpixel((88, 144))[3], 0)
+
             reconstruction = Image.new("RGB", image.size)
             for column in range(3):
                 for row in range(2):
