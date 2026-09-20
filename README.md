@@ -1,43 +1,55 @@
 # NoronhaMapExporter
 
-Export high-resolution native DayZ maps with lossless capture and geometric stitching.
+Export the native DayZ map as a high-resolution, lossless image.
 
-I originally built NoronhaMapExporter while developing the Fernando de Noronha terrain for DayZ. I needed a reliable way to export the native in-game map at high resolution, so I built the tool I could not find. It is published because the same problem affects other terrain creators too: despite the name, NoronhaMapExporter is not specific to Noronha.
+![Full Fernando de Noronha export with hillshade](images/examples/noronha-master.jpg)
 
-## Features
+I built this while working on my Fernando de Noronha terrain. I spent far too
+long looking for a reliable way to export the native DayZ map at high
+resolution, so eventually I stopped looking and made one.
 
-- Renders the native DayZ `MapWidget`, including terrain map data, roads, contours, vegetation, buildings, and location data exposed by the engine.
-- Measures each widget viewport in world space and stitches captures from those recorded bounds rather than image-feature matching.
-- Captures lossless PNGs through a local request/ACK helper and produces exact configured-world crops.
-- Supports compatible custom terrains and locally detected installed DayZ worlds.
-- Keeps satellite source export and hillshade separate from the native 2D master.
+It solved my problem, so I cleaned it up for other terrain makers too. Despite
+the name, NoronhaMapExporter is made for any compatible DayZ terrain.
 
-## Quick Start
+## Get started
 
 ```powershell
 .\setup.ps1
 .\run-2d.ps1
 ```
 
-`setup.ps1` tries to find DayZ and DayZ Tools, asks for Chernarus, Livonia, or a custom terrain, writes the ignored local `config.json`, creates a minimal offline mission, and runs a preflight check. `run-2d.ps1` builds the addon, opens DayZDiag, and detects a completed capture manifest automatically.
+`setup.ps1` finds DayZ and DayZ Tools, lets you choose Chernarus, Livonia, or a
+custom terrain, creates `config.json`, creates the offline exporter mission,
+and checks the dependencies. `run-2d.ps1` builds the exporter addon, starts
+DayZDiag, captures the map, and stitches the result.
 
-During an export, enter the offline mission, press `Ctrl+F8`, then `F8`. There is no console Enter step.
+When DayZDiag opens:
 
-Requirements: DayZ with `DayZDiag_x64.exe`, DayZ Tools, Python 3 with Pillow and NumPy, and the .NET 8 SDK. If Pillow or NumPy is missing, install them explicitly:
+1. Enter the generated offline mission.
+2. Press `Ctrl+F8`.
+3. Press `F8` once.
+4. Wait for the export to finish.
 
-```powershell
-python -m pip install -r .\stitcher\requirements.txt
-```
+The script detects completion automatically.
 
-## Configuration
+## What it exports
 
-For most custom terrains, edit only `paths.dayz`, `paths.dayzTools`, `paths.terrainMod`, `paths.mission`, `world.name`, and `world.size`. Start with `config.example.json`, then generate the matching mission:
+- The native DayZ `MapWidget`
+- High-resolution stitched PNGs for overview and detail views
+- Optional hillshade and source satellite output
 
-```powershell
-Copy-Item .\config.example.json .\config.json
-.\scripts\create-mission.ps1 -ConfigPath .\config.json
-.\setup.ps1 -Check
-```
+| Native DayZ MapWidget | Clean exported map |
+| --- | --- |
+| ![Native MapWidget with its normal grid](images/examples/raw-map.jpg) | ![Clean map export without the technical grid](images/examples/engine-clean.jpg) |
+
+The full Fernando de Noronha output above was exported at `9600 × 9600` pixels
+from 60 native captures, with hillshade applied separately after stitching.
+
+## Custom terrains
+
+`setup.ps1` is the recommended path. For manual setup or advanced changes, see
+[`config.example.json`](config.example.json). A minimal custom-terrain setup
+looks like this:
 
 ```json
 {
@@ -52,48 +64,70 @@ Copy-Item .\config.example.json .\config.json
 }
 ```
 
-Use `"terrainMod": null` (or `""`) for an installed world; no terrain mod is added to the launch command. `exports` controls overview/detail scales. `cartography` controls the generated public map presentation. `satmap` is needed only for `run-satmap.ps1`, and hillshade is disabled unless explicitly enabled with an authoritative ASC heightmap.
+`world.name` is the DayZ world/config name, not the Steam Workshop display
+name. `world.size` is the terrain width in metres, not pixels. For an installed
+world, set `terrainMod` to `null`.
+
+## Map compatibility
+
+NoronhaMapExporter is designed to work with any DayZ world that exposes its
+map through the native `MapWidget`.
+
+Runtime tested with:
+
+- Fernando de Noronha — custom terrain
+- Chernarus — `ChernarusPlus`
+- Livonia — `Enoch`
+
+Other installed and custom worlds should use the same pipeline, though not
+every terrain has been individually tested.
 
 ## Output
 
 ```text
 output/<world>/2d/overview.png
 output/<world>/2d/detail.png
-output/<world>/2d/manifest.json
+output/<world>/tourist/
+output/<world>/satmap/
 ```
 
-The manifest records the source session, scale, dimensions, metres per pixel, and hash. Local profiles, capture sessions, generated PBOs, screenshots, masters, and configuration stay out of Git.
+The `tourist` folder is created when hillshade is enabled. The `satmap` folder
+is created by the optional satellite export. A small manifest sits beside each
+output for later reference.
 
-## Resolution
+## Optional: hillshade and satellite
 
-Lower `MapWidget` scales cover fewer metres per capture, so the exporter takes more tiles and produces a larger raster. This is native engine rendering, not artificial upscaling; more pixels do not necessarily reveal more map detail.
+Hillshade adds terrain relief to a separate copy of the clean 2D export; it
+never replaces the original map. It needs an authoritative ASC heightmap.
 
-## Satellite & Hillshade
+Satellite export is also separate and uses an explicit source raster. Neither
+option is required for a normal 2D export.
 
-`run-satmap.ps1` copies an explicit RGB source raster losslessly and records its dimensions and hash. It is optional and never blocks a 2D export.
+## FAQ
 
-Hillshade is optional post-processing. When enabled, it needs an authoritative ASC heightmap and writes a separate tourist image without replacing the clean native 2D master.
+**Can I export at a higher resolution?** Yes. Lower `MapWidget` scales produce
+more captures and a larger final image. This is native engine rendering, not
+artificial upscaling, and more pixels do not always reveal more DayZ map detail.
 
-## Supported Worlds
+**Does it work on Linux?** The full capture workflow currently requires Windows
+because it depends on DayZDiag, DayZ Tools, and the Windows capture helper.
+Offline Python processing may work elsewhere; Wine and Proton are untested and
+unsupported.
 
-| World | Config name | Current status | Notes |
-| --- | --- | --- | --- |
-| Fernando de Noronha | user supplied | tested | custom-terrain runtime smoke; 10240 m |
-| Chernarus | `ChernarusPlus` | tested | 15360 m runtime smoke |
-| Livonia | `Enoch` | tested | 12800 m runtime smoke |
-| Other custom terrains | user supplied | compatible configuration | provide the terrain mod, mission, class name, and width |
+## Requirements
 
-Other installed worlds may work but are unverified.
+- DayZ
+- DayZ Tools
+- Python 3
+- Pillow and NumPy
+- .NET 8 SDK
+- Windows
 
-## FAQ / Limitations
+```powershell
+python -m pip install -r .\stitcher\requirements.txt
+```
 
-**Can I export at a higher resolution?** Yes. Lower `MapWidget` scales produce more captures and a larger raster, but more pixels do not necessarily expose additional engine detail.
-
-**Does it work on Linux?** The complete capture workflow is currently Windows-only because it depends on DayZDiag, DayZ Tools, and the Windows capture helper. Python offline processing can be cross-platform, but Linux capture is not currently supported. Wine and Proton are untested and unsupported.
-
-**Why is the map not a replacement for terrain source data?** The exporter records what DayZ renders at runtime. It does not regenerate WRP, terrain, satellite, or heightmap data.
-
-For the coordinate and capture boundary, see [the architecture note](docs/ARCHITECTURE.md).
+For implementation details, see [Architecture](docs/ARCHITECTURE.md).
 
 ## License
 
