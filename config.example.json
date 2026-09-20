@@ -43,8 +43,8 @@
   "ocean": {
     "enabled": true,
     "color": "#C9DEE9",
-    "coastHaloColor": "#D7E8F0",
-    "coastHaloWidthPx": 6,
+    "coastHaloColor": "#D3E4EC",
+    "coastHaloWidthPx": 4,
     "coastStrokeColor": "#A7BDC8",
     "coastStrokeWidthPx": 1
   },

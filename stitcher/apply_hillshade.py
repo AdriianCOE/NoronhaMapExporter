@@ -103,9 +103,12 @@ def coast_layers(land: np.ndarray, halo_width: int, stroke_width: int) -> tuple[
 
     halo = np.zeros(binary.shape, dtype=np.float32)
     if halo_width:
-        for distance in range(1, halo_width + 1):
-            amount = 0.32 * (1.0 - (distance - 1) / halo_width)
-            halo = np.maximum(halo, (expand(distance) & ~binary).astype(np.float32) * amount)
+        # Two bands are visually soft enough at tourist-map scale and avoid a
+        # full dilation pass per pixel of halo width on large masters.
+        outer = expand(halo_width) & ~binary
+        halo[outer] = 0.10
+        inner = expand(min(2, halo_width)) & ~binary
+        halo[inner] = 0.25
 
     stroke = np.zeros(binary.shape, dtype=np.float32)
     if stroke_width:
@@ -165,9 +168,9 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
 
     ocean_enabled = bool(_option(args, "ocean_enabled", False))
     ocean_color = parse_hex_color(str(_option(args, "ocean_color", "#C9DEE9")), "ocean color")
-    halo_color = parse_hex_color(str(_option(args, "coast_halo_color", "#D7E8F0")), "coast halo color")
+    halo_color = parse_hex_color(str(_option(args, "coast_halo_color", "#D3E4EC")), "coast halo color")
     stroke_color = parse_hex_color(str(_option(args, "coast_stroke_color", "#A7BDC8")), "coast stroke color")
-    halo_width = int(_option(args, "coast_halo_width", 6))
+    halo_width = int(_option(args, "coast_halo_width", 4))
     stroke_width = int(_option(args, "coast_stroke_width", 1))
 
     slope_mask_enabled = bool(_option(args, "slope_mask_enabled", False))
@@ -247,7 +250,7 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
         "output": {"path": str(args.output), "width": width, "height": height, "sha256": sha256(args.output)},
         "orientation": {"flipVertical": False, "ascRows": "north-to-south", "masterY": "north-to-south"},
         "compositionOrder": COMPOSITION_ORDER,
-        "ocean": {"enabled": ocean_enabled, "color": str(_option(args, "ocean_color", "#C9DEE9")), "coastHaloColor": str(_option(args, "coast_halo_color", "#D7E8F0")), "coastHaloWidthPx": halo_width, "coastStrokeColor": str(_option(args, "coast_stroke_color", "#A7BDC8")), "coastStrokeWidthPx": stroke_width},
+        "ocean": {"enabled": ocean_enabled, "color": str(_option(args, "ocean_color", "#C9DEE9")), "coastHaloColor": str(_option(args, "coast_halo_color", "#D3E4EC")), "coastHaloWidthPx": halo_width, "coastStrokeColor": str(_option(args, "coast_stroke_color", "#A7BDC8")), "coastStrokeWidthPx": stroke_width},
         "hillshade": {"enabled": hillshade_enabled, "blend": "luminance", "multidirectional": {"azimuths": [225, 270, 315, 360], "elevation": float(args.elevation)}, "slopeWeight": {"enabled": hillshade_slope_weighted, "startDegrees": slope_start, "fullDegrees": slope_full}, "opacity": hillshade_opacity},
         "slopeMask": {"enabled": slope_mask_enabled, "color": str(_option(args, "slope_mask_color", "#7A7A7A")), "opacity": slope_mask_opacity, "startDegrees": slope_mask_start, "fullDegrees": slope_mask_full},
         "seaLevel": float(args.sea_level),
@@ -274,8 +277,8 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--hillshade-slope-weighted", type=parse_bool, default=True)
     parser.add_argument("--ocean-enabled", type=parse_bool, default=False)
     parser.add_argument("--ocean-color", default="#C9DEE9")
-    parser.add_argument("--coast-halo-color", default="#D7E8F0")
-    parser.add_argument("--coast-halo-width", type=int, default=6)
+    parser.add_argument("--coast-halo-color", default="#D3E4EC")
+    parser.add_argument("--coast-halo-width", type=int, default=4)
     parser.add_argument("--coast-stroke-color", default="#A7BDC8")
     parser.add_argument("--coast-stroke-width", type=int, default=1)
     parser.add_argument("--slope-mask-enabled", type=parse_bool, default=False)
