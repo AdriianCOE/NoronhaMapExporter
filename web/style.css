@@ -231,18 +231,18 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 430px) {
   .toolbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: clamp(108px, 34vw, 138px) auto minmax(0, 1fr);
     gap: 6px 8px;
     min-height: 0;
     padding: 8px 9px;
   }
-  .brand { grid-column: 1; grid-row: 1; padding-left: 3px; }
+  .brand { grid-column: 1 / 3; grid-row: 1; padding-left: 3px; }
   .brand strong { max-width: none; overflow: visible; text-overflow: clip; font-size: 13px; }
-  .toolbar-actions { grid-column: 1 / -1; grid-row: 2; width: 100%; margin-left: 0; }
-  .layer-picker { flex: 1 1 auto; }
+  .toolbar-actions { display: contents; }
+  .layer-picker { grid-column: 1; grid-row: 2; width: 100%; }
   .layer-picker select { width: 100%; min-width: 0; }
-  #about-open { position: absolute; top: 8px; right: 9px; min-height: 30px; }
-  .clouds-control { flex: 0 0 auto; }
+  #about-open { position: static; grid-column: 3; grid-row: 1; min-height: 30px; justify-self: end; }
+  .clouds-control { grid-column: 2; grid-row: 2; justify-self: start; }
   .about-dialog { padding: 24px 21px; }
 }
 
