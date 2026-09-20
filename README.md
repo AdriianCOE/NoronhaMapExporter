@@ -11,6 +11,8 @@ resolution, so eventually I stopped looking and made one.
 It solved my problem, so I cleaned it up for other terrain makers too. Despite
 the name, NoronhaMapExporter is made for any compatible DayZ terrain.
 
+[Explore the interactive Noronha map →](https://adriiancoe.github.io/NoronhaMapExporter/)
+
 ## Get started
 
 ```powershell
