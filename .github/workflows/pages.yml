@@ -1,0 +1,48 @@
+name: Deploy interactive showcase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/pages.yml"
+      - "web/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exporter source
+        uses: actions/checkout@v4
+
+      - name: Fetch generated showcase assets
+        run: git clone --depth 1 https://github.com/AdriianCOE/NoronhaMapExporter-showcase-assets.git _site
+
+      - name: Overlay current viewer source
+        run: |
+          rm -rf _site/.git
+          rsync -a --delete --exclude map-config.js --exclude map-package-manifest.json --exclude tiles/ web/ _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
