@@ -2,30 +2,13 @@
 
 Export the native DayZ map as a high-resolution, lossless image.
 
-[![Full Fernando de Noronha export with hillshade](images/examples/noronha-master.jpg)](https://adriiancoe.github.io/NoronhaMapExporter/)
+[![Fernando de Noronha tourist map exported with NoronhaMapExporter](images/examples/noronha-master.jpg)](https://adriiancoe.github.io/NoronhaMapExporter/)
 
-I built this while working on my Fernando de Noronha terrain. I spent far too
-long looking for a reliable way to export the native DayZ map at high
-resolution, so eventually I stopped looking and made one.
+**[Explore the Fernando de Noronha map →](https://adriiancoe.github.io/NoronhaMapExporter/)** · **[Download the latest release →](https://github.com/AdriianCOE/NoronhaMapExporter/releases/latest)**
 
-It solved my problem, so I cleaned it up for other terrain makers too. Despite
-the name, NoronhaMapExporter is made for any compatible DayZ terrain.
+I built NoronhaMapExporter while working on my [Fernando de Noronha terrain](https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894). I spent far too long looking for a reliable way to export DayZ's native map at high resolution, so eventually I stopped looking and made one.
 
-[Explore the Fernando de Noronha interactive demo →](https://adriiancoe.github.io/NoronhaMapExporter/) · [Download the latest release →](https://github.com/AdriianCOE/NoronhaMapExporter/releases/latest)
-
-## Interactive showcase
-
-The interactive map is a showcase of the [Fernando de Noronha terrain on
-Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894).
-Switch between the polished Tourist map, the Clean MapWidget export, and the
-source SatMap. Optional clouds are anchored to the map, so they move and scale
-with the terrain instead of following the screen. They are enabled by default
-and can be hidden from the compact viewer toolbar.
-
-This is the official showcase for the project, but only a public example of
-its output. The exporter itself remains generic and the viewer is not required
-to use it. Generated tiles live in a separate assets repository so normal
-clones stay small.
+It solved my problem, so I cleaned it up for other terrain makers too. Despite the name, NoronhaMapExporter is designed for compatible vanilla and custom DayZ worlds.
 
 ## Get started
 
@@ -34,12 +17,11 @@ clones stay small.
 .\run-2d.ps1
 ```
 
-Windows · DayZ · DayZ Tools · Python 3 · .NET 8 SDK
+**Requirements:** Windows · DayZ · DayZ Tools · Python 3 · .NET 8 SDK
 
-`setup.ps1` finds DayZ and DayZ Tools, lets you choose Chernarus, Livonia, or a
-custom terrain, creates `config.json`, creates the offline exporter mission,
-and checks the dependencies. `run-2d.ps1` builds the exporter addon, starts
-DayZDiag, captures the map, and stitches the result.
+`setup.ps1` finds DayZ and DayZ Tools, lets you choose Chernarus, Livonia, or a custom terrain, creates the local configuration and offline mission, and checks the required dependencies.
+
+`run-2d.ps1` builds the exporter addon, starts DayZDiag, captures the map, and stitches the result automatically.
 
 When DayZDiag opens:
 
@@ -52,22 +34,24 @@ The script detects completion automatically.
 
 ## What it exports
 
-- The native DayZ `MapWidget`
-- High-resolution stitched PNGs for overview and detail views
-- Optional hillshade and source satellite output
+- Native DayZ `MapWidget` cartography
+- Lossless stitched PNG output
+- Separate overview and detail exports
+- Clean cartography without the normal technical grid
+- Optional tourist-map relief from an ASC heightmap
+- Optional standalone source satellite export
 
 | Native DayZ MapWidget | Clean exported map |
 | --- | --- |
 | ![Native MapWidget with its normal grid](images/examples/raw-map.jpg) | ![Clean map export without the technical grid](images/examples/engine-clean.jpg) |
 
-The full Fernando de Noronha output above was exported at `9600 × 9600` pixels
-from 60 native captures, with hillshade applied separately after stitching.
+The Fernando de Noronha detail map shown above was exported at **9600 × 9600 px** from 60 native captures. The tourist version is produced separately, so the clean stitched master remains untouched.
 
 ## Custom terrains
 
-`setup.ps1` is the recommended path. For manual setup or advanced changes, see
-[`config.example.json`](config.example.json). A minimal custom-terrain setup
-looks like this:
+`setup.ps1` is the recommended setup path. For manual configuration or advanced changes, see [`config.example.json`](config.example.json).
+
+A minimal custom-terrain configuration looks like this:
 
 ```json
 {
@@ -82,23 +66,19 @@ looks like this:
 }
 ```
 
-`world.name` is the DayZ world/config name, not the Steam Workshop display
-name. `world.size` is the terrain width in metres, not pixels. For an installed
-world, set `terrainMod` to `null`.
+`world.name` is the DayZ world/config name, not the Steam Workshop display name. `world.size` is the terrain width in metres, not pixels. For an installed vanilla world, `terrainMod` can be `null`.
 
-## Map compatibility
+## Compatibility
 
-NoronhaMapExporter is designed to work with any DayZ world that exposes its
-map through the native `MapWidget`.
+NoronhaMapExporter is designed around DayZ's native `MapWidget` and is not tied to a single terrain.
 
 Runtime tested with:
 
-- Fernando de Noronha — custom terrain
-- Chernarus — `ChernarusPlus`
-- Livonia — `Enoch`
+- **Fernando de Noronha** — custom terrain
+- **Chernarus** — `ChernarusPlus`
+- **Livonia** — `Enoch`
 
-Other installed and custom worlds should use the same pipeline, though not
-every terrain has been individually tested.
+Other compatible installed and custom worlds should use the same pipeline, although not every terrain has been individually runtime-tested.
 
 ## Output
 
@@ -109,45 +89,34 @@ output/<world>/tourist/
 output/<world>/satmap/
 ```
 
-The `tourist` folder is created when hillshade is enabled. The `satmap` folder
-is created by the optional satellite export. A small manifest sits beside each
-output for later reference.
+The clean 2D export is the primary output. Tourist relief and satellite output are optional and are written separately.
 
-## Optional: hillshade and satellite
+## Tourist map, hillshade and satellite
 
-Hillshade adds terrain relief to a separate copy of the clean 2D export; it
-never replaces the original map. The same authoritative ASC can also provide a
-soft coast-distance ocean gradient and a subtle slope mask for cliffs. The
-recommended tourist preset is in [`config.example.json`](config.example.json):
-25% luminance hillshade, slope weighting from 5° to 30°, a 12% cliff mask from
-18° to 35°, and a restrained ocean gradient from the shore to open water.
+The optional tourist pipeline can add terrain relief without modifying the clean 2D master. It uses the terrain's authoritative ASC heightmap for slope-weighted multidirectional hillshade, subtle cliff emphasis, coastline treatment, and ocean-distance shading.
 
-The DayZ control already distinguishes native minor and main contour lines.
-`cartography.contours.mainOpacity` only strengthens that native hierarchy; the
-exporter does not draw image-derived replacement contours.
+The public defaults live in [`config.example.json`](config.example.json) and are intentionally conservative so roads, buildings, vegetation, labels, and native contour lines remain readable.
 
-Satellite export is also separate and uses an explicit source raster. Neither
-option is required for a normal 2D export.
+Satellite export is separate from the MapWidget pipeline and uses an explicit source raster. Neither tourist relief nor satellite output is required for a normal 2D export.
 
 ## FAQ
 
-**Can I export at a higher resolution?** Yes. Lower `MapWidget` scales produce
-more captures and a larger final image. This is native engine rendering, not
-artificial upscaling, and more pixels do not always reveal more DayZ map detail.
+**Can I export at a higher resolution?**  
+Yes. Lower `MapWidget` scales produce more captures and a larger final image. This is native engine rendering rather than artificial upscaling, although more pixels do not always reveal additional DayZ map detail.
 
-**Does it work on Linux?** The full capture workflow currently requires Windows
-because it depends on DayZDiag, DayZ Tools, and the Windows capture helper.
-Offline Python processing may work elsewhere; Wine and Proton are untested and
-unsupported.
+**Does it work on Linux?**  
+The full capture workflow currently requires Windows because it depends on DayZDiag, DayZ Tools, and the Windows capture helper. Offline Python processing may work elsewhere; Wine and Proton are untested and unsupported.
 
 ## Requirements
 
+- Windows
 - DayZ
 - DayZ Tools
 - Python 3
 - Pillow and NumPy
 - .NET 8 SDK
-- Windows
+
+Install the Python dependencies with:
 
 ```powershell
 python -m pip install -r .\stitcher\requirements.txt
