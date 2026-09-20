@@ -1,7 +1,8 @@
 """Create a clean tourist-map derivative from a stitched native 2D master.
 
 The input master and ASC are read-only. Composition order is native base,
-ocean, slope-weighted luminance hillshade, slope mask, then coast effects.
+ocean-distance gradient, slope-weighted luminance hillshade, slope mask, then
+coast effects.
 Every effect is optional and recorded in the output manifest.
 """
 from __future__ import annotations
@@ -46,7 +47,7 @@ except ModuleNotFoundError:
 
 COMPOSITION_ORDER = [
     "native-2d-master",
-    "ocean-fill",
+    "ocean-distance-gradient",
     "slope-weighted-luminance-hillshade",
     "slope-cliff-mask",
     "coast-halo",
@@ -81,6 +82,104 @@ def tint(base: np.ndarray, color: tuple[int, int, int], alpha: np.ndarray) -> np
     amount = np.clip(alpha, 0.0, 1.0).astype(np.float32, copy=False)
     overlay = np.asarray(color, dtype=np.float32)
     result = base.astype(np.float32) * (1.0 - amount[:, :, None]) + overlay * amount[:, :, None]
+    return np.clip(result, 0, 255).astype(np.uint8)
+
+
+def _squared_distance_1d(values: np.ndarray) -> np.ndarray:
+    """Exact squared Euclidean distance transform for one row or column.
+
+    ``values`` is zero at source samples and infinity elsewhere. The routine is
+    the lower-envelope form of the separable Euclidean transform, so it avoids
+    repeated image dilations as either the map resolution or coast distance
+    grows.
+    """
+    length = values.size
+    sites = np.flatnonzero(np.isfinite(values))
+    if sites.size == 0:
+        return np.full(length, np.inf, dtype=np.float64)
+
+    vertices = np.empty(sites.size, dtype=np.int32)
+    boundaries = np.empty(sites.size + 1, dtype=np.float64)
+    vertices[0] = sites[0]
+    boundaries[0] = -np.inf
+    boundaries[1] = np.inf
+    count = 0
+
+    for source in sites[1:]:
+        previous = vertices[count]
+        boundary = ((values[source] + source * source) - (values[previous] + previous * previous)) / (2.0 * (source - previous))
+        while count > 0 and boundary <= boundaries[count]:
+            count -= 1
+            previous = vertices[count]
+            boundary = ((values[source] + source * source) - (values[previous] + previous * previous)) / (2.0 * (source - previous))
+        count += 1
+        vertices[count] = source
+        boundaries[count] = boundary
+        boundaries[count + 1] = np.inf
+
+    distances = np.empty(length, dtype=np.float64)
+    count = 0
+    for target in range(length):
+        while boundaries[count + 1] < target:
+            count += 1
+        source = vertices[count]
+        distances[target] = (target - source) * (target - source) + values[source]
+    return distances
+
+
+def ocean_distance_meters(land: np.ndarray, cellsize: float) -> np.ndarray:
+    """Return ocean-to-nearest-land distance in world metres.
+
+    The ASC is the only geometric source. This is a coastline-distance field,
+    not bathymetry: terrain elevation is used solely to identify land.
+    """
+    if cellsize <= 0:
+        raise HillshadeError("ASC cellsize must be greater than zero")
+    sources = np.where(land >= 0.5, 0.0, np.inf)
+    horizontal = np.empty(sources.shape, dtype=np.float64)
+    for row_index in range(sources.shape[0]):
+        horizontal[row_index] = _squared_distance_1d(sources[row_index])
+    distance_squared = np.empty(sources.shape, dtype=np.float64)
+    for column_index in range(sources.shape[1]):
+        distance_squared[:, column_index] = _squared_distance_1d(horizontal[:, column_index])
+    return (np.sqrt(distance_squared) * cellsize).astype(np.float32)
+
+
+def _smoothstep(start: float, end: float, values: np.ndarray) -> np.ndarray:
+    if end <= start:
+        raise HillshadeError("ocean distance thresholds require start < end")
+    amount = np.clip((values - start) / (end - start), 0.0, 1.0)
+    return amount * amount * (3.0 - 2.0 * amount)
+
+
+def ocean_gradient(
+    distance_meters: np.ndarray,
+    coastal_color: tuple[int, int, int],
+    normal_color: tuple[int, int, int],
+    deep_color: tuple[int, int, int],
+    coastal_distance: float,
+    deep_distance: float,
+) -> np.ndarray:
+    """Build a restrained near/normal/deep ocean palette from coast distance."""
+    if coastal_distance < 0 or coastal_distance >= deep_distance:
+        raise HillshadeError("ocean distances require 0 <= coastalDistanceM < deepDistanceM")
+    middle_distance = coastal_distance + (deep_distance - coastal_distance) * 0.35
+    near_to_normal = _smoothstep(coastal_distance, middle_distance, distance_meters)
+    normal_to_deep = _smoothstep(middle_distance, deep_distance, distance_meters)
+    coastal = np.asarray(coastal_color, dtype=np.float32)
+    normal = np.asarray(normal_color, dtype=np.float32)
+    deep = np.asarray(deep_color, dtype=np.float32)
+    colors = coastal + (normal - coastal) * near_to_normal[:, :, None]
+    colors = colors + (deep - normal) * normal_to_deep[:, :, None]
+    return np.clip(colors, 0, 255).astype(np.uint8)
+
+
+def replace_ocean(base: np.ndarray, colors: np.ndarray, land: np.ndarray) -> np.ndarray:
+    """Replace water only, retaining native terrestrial pixels and edge blending."""
+    if base.shape != colors.shape or base.shape[:2] != land.shape:
+        raise HillshadeError("ocean gradient dimensions do not match the master")
+    water = (1.0 - np.clip(land, 0.0, 1.0)).astype(np.float32)
+    result = base.astype(np.float32) * (1.0 - water[:, :, None]) + colors.astype(np.float32) * water[:, :, None]
     return np.clip(result, 0, 255).astype(np.uint8)
 
 
@@ -167,7 +266,16 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
             hillshade_weight = land.astype(np.float32)
 
     ocean_enabled = bool(_option(args, "ocean_enabled", False))
-    ocean_color = parse_hex_color(str(_option(args, "ocean_color", "#C9DEE9")), "ocean color")
+    ocean_color_value = str(_option(args, "ocean_color", "#C9DEE9"))
+    ocean_color = parse_hex_color(ocean_color_value, "ocean color")
+    coastal_color_value = _option(args, "ocean_coastal_color", None) or ocean_color_value
+    deep_color_value = _option(args, "ocean_deep_color", None) or ocean_color_value
+    coastal_color = parse_hex_color(str(coastal_color_value), "ocean coastal color")
+    deep_color = parse_hex_color(str(deep_color_value), "ocean deep color")
+    coastal_distance = float(_option(args, "ocean_coastal_distance", 0.0))
+    deep_distance = float(_option(args, "ocean_deep_distance", 1.0))
+    if coastal_distance < 0 or coastal_distance >= deep_distance:
+        raise HillshadeError("ocean distances require 0 <= coastalDistanceM < deepDistanceM")
     halo_color = parse_hex_color(str(_option(args, "coast_halo_color", "#D3E4EC")), "coast halo color")
     stroke_color = parse_hex_color(str(_option(args, "coast_stroke_color", "#A7BDC8")), "coast stroke color")
     halo_width = int(_option(args, "coast_halo_width", 4))
@@ -185,6 +293,8 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
     slope_mask_weight = None
     if slope_mask_enabled:
         slope_mask_weight = slope_weight_from_degrees(slope_degrees, slope_mask_start, slope_mask_full) * land
+
+    distance_to_land = ocean_distance_meters(land, grid.cellsize) if ocean_enabled else None
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", Image.DecompressionBombWarning)
@@ -205,8 +315,24 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
                 )
                 base = np.asarray(source.crop((0, top, width, bottom)).convert("RGB"), dtype=np.uint8)
                 composed = base
-                if ocean_enabled:
-                    composed = tint(composed, ocean_color, 1.0 - land_strip)
+                if ocean_enabled and distance_to_land is not None:
+                    distance_strip = np.clip(
+                        resample_rows(distance_to_land, top, bottom, width, height, world_size, Image.Resampling.BILINEAR),
+                        0,
+                        deep_distance,
+                    )
+                    composed = replace_ocean(
+                        composed,
+                        ocean_gradient(
+                            distance_strip,
+                            coastal_color,
+                            ocean_color,
+                            deep_color,
+                            coastal_distance,
+                            deep_distance,
+                        ),
+                        land_strip,
+                    )
                 if hillshade_enabled and shade is not None and hillshade_weight is not None:
                     shade_strip = resample_rows(shade, top, bottom, width, height, world_size, Image.Resampling.BICUBIC)
                     weight_strip = np.clip(
@@ -250,7 +376,19 @@ def apply(args: argparse.Namespace) -> dict[str, object]:
         "output": {"path": str(args.output), "width": width, "height": height, "sha256": sha256(args.output)},
         "orientation": {"flipVertical": False, "ascRows": "north-to-south", "masterY": "north-to-south"},
         "compositionOrder": COMPOSITION_ORDER,
-        "ocean": {"enabled": ocean_enabled, "color": str(_option(args, "ocean_color", "#C9DEE9")), "coastHaloColor": str(_option(args, "coast_halo_color", "#D3E4EC")), "coastHaloWidthPx": halo_width, "coastStrokeColor": str(_option(args, "coast_stroke_color", "#A7BDC8")), "coastStrokeWidthPx": stroke_width},
+        "ocean": {
+            "enabled": ocean_enabled,
+            "coastalColor": str(coastal_color_value),
+            "color": ocean_color_value,
+            "deepColor": str(deep_color_value),
+            "coastalDistanceM": coastal_distance,
+            "deepDistanceM": deep_distance,
+            "distanceField": "ASC coastline distance only",
+            "coastHaloColor": str(_option(args, "coast_halo_color", "#D3E4EC")),
+            "coastHaloWidthPx": halo_width,
+            "coastStrokeColor": str(_option(args, "coast_stroke_color", "#A7BDC8")),
+            "coastStrokeWidthPx": stroke_width,
+        },
         "hillshade": {"enabled": hillshade_enabled, "blend": "luminance", "multidirectional": {"azimuths": [225, 270, 315, 360], "elevation": float(args.elevation)}, "slopeWeight": {"enabled": hillshade_slope_weighted, "startDegrees": slope_start, "fullDegrees": slope_full}, "opacity": hillshade_opacity},
         "slopeMask": {"enabled": slope_mask_enabled, "color": str(_option(args, "slope_mask_color", "#7A7A7A")), "opacity": slope_mask_opacity, "startDegrees": slope_mask_start, "fullDegrees": slope_mask_full},
         "seaLevel": float(args.sea_level),
@@ -277,6 +415,10 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--hillshade-slope-weighted", type=parse_bool, default=True)
     parser.add_argument("--ocean-enabled", type=parse_bool, default=False)
     parser.add_argument("--ocean-color", default="#C9DEE9")
+    parser.add_argument("--ocean-coastal-color")
+    parser.add_argument("--ocean-deep-color")
+    parser.add_argument("--ocean-coastal-distance", type=float, default=0)
+    parser.add_argument("--ocean-deep-distance", type=float, default=1)
     parser.add_argument("--coast-halo-color", default="#D3E4EC")
     parser.add_argument("--coast-halo-width", type=int, default=4)
     parser.add_argument("--coast-stroke-color", default="#A7BDC8")

@@ -111,6 +111,11 @@ if ($hillshadeEnabled) {
 }
 if ($oceanEnabled) {
     Assert-HexColor $ocean 'color' 'ocean.color'
+    if ($null -ne (Get-Value $ocean 'coastalColor')) { Assert-HexColor $ocean 'coastalColor' 'ocean.coastalColor' }
+    if ($null -ne (Get-Value $ocean 'deepColor')) { Assert-HexColor $ocean 'deepColor' 'ocean.deepColor' }
+    $coastalDistance = [double](Get-Value $ocean 'coastalDistanceM' 0)
+    $deepDistance = [double](Get-Value $ocean 'deepDistanceM' 1)
+    if ($coastalDistance -lt 0 -or $coastalDistance -ge $deepDistance) { Fail 'ocean distances require 0 <= coastalDistanceM < deepDistanceM.' }
     if ($null -ne (Get-Value $ocean 'coastHaloColor')) { Assert-HexColor $ocean 'coastHaloColor' 'ocean.coastHaloColor' }
     if ($null -ne (Get-Value $ocean 'coastStrokeColor')) { Assert-HexColor $ocean 'coastStrokeColor' 'ocean.coastStrokeColor' }
     if ($null -ne (Get-Value $ocean 'coastHaloWidthPx')) { Assert-Range $ocean 'coastHaloWidthPx' 'ocean.coastHaloWidthPx' 0 64 }

@@ -101,10 +101,14 @@ output for later reference.
 
 Hillshade adds terrain relief to a separate copy of the clean 2D export; it
 never replaces the original map. The same authoritative ASC can also provide a
-soft ocean fill and a subtle slope mask for cliffs. The recommended tourist
-preset is in [`config.example.json`](config.example.json): 25% luminance
-hillshade, slope weighting from 5° to 30°, and a 12% cliff mask from 18° to
-35°.
+soft coast-distance ocean gradient and a subtle slope mask for cliffs. The
+recommended tourist preset is in [`config.example.json`](config.example.json):
+25% luminance hillshade, slope weighting from 5° to 30°, a 12% cliff mask from
+18° to 35°, and a restrained ocean gradient from the shore to open water.
+
+The DayZ control already distinguishes native minor and main contour lines.
+`cartography.contours.mainOpacity` only strengthens that native hierarchy; the
+exporter does not draw image-derived replacement contours.
 
 Satellite export is also separate and uses an explicit source raster. Neither
 option is required for a normal 2D export.
