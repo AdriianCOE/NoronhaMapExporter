@@ -13,9 +13,17 @@ the name, NoronhaMapExporter is made for any compatible DayZ terrain.
 
 [Explore the Fernando de Noronha interactive demo →](https://adriiancoe.github.io/NoronhaMapExporter/) · [Download the latest release →](https://github.com/AdriianCOE/NoronhaMapExporter/releases/latest)
 
+## Interactive showcase
+
 The interactive map is a showcase of the [Fernando de Noronha terrain on
 Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894).
-The exporter itself is designed for compatible vanilla and custom DayZ worlds.
+Switch between the polished Tourist map, the Clean MapWidget export, and the
+source SatMap. Optional clouds are anchored to the map, so they move and scale
+with the terrain instead of following the screen.
+
+The viewer is only a public example of the output. It is not required to use
+the exporter, and its generated tiles live in a separate assets repository so
+normal clones stay small.
 
 ## Get started
 

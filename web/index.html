@@ -13,14 +13,10 @@
   <body>
     <main id="map" aria-label="Interactive Noronha map"></main>
 
-    <div id="cloud-layer" class="cloud-layer" aria-hidden="true">
-      <img src="./assets/clouds.svg" alt="">
-    </div>
-
     <header class="toolbar" aria-label="Map controls">
       <div class="brand">
         <strong>NoronhaMapExporter</strong>
-        <span>Fernando de Noronha, Brazil <span aria-hidden="true">🇧🇷</span></span>
+        <span>Fernando de Noronha, Brazil</span>
       </div>
       <div class="toolbar-actions">
         <label class="layer-picker" for="layer-select">
@@ -29,29 +25,40 @@
             <option>Loading map…</option>
           </select>
         </label>
-        <button id="menu-toggle" class="menu-toggle" type="button" aria-expanded="false" aria-controls="controls-panel">Menu</button>
-        <div id="controls-panel" class="controls-panel">
-          <button id="clouds-toggle" class="control-button" type="button" aria-pressed="true">Clouds <span id="clouds-state">On</span></button>
-          <button id="reset-view" class="control-button" type="button">Reset view</button>
-          <button id="fullscreen-toggle" class="control-button" type="button">Fullscreen</button>
-          <a id="github-link" class="external-link" href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-          <a id="workshop-link" class="external-link" href="https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894" target="_blank" rel="noopener noreferrer">Workshop <span aria-hidden="true">↗</span></a>
-          <button id="about-open" class="control-button about-button" type="button">About</button>
+        <button id="reset-view" class="primary-control" type="button">Reset</button>
+        <button id="menu-toggle" class="primary-control menu-toggle" type="button" aria-expanded="false" aria-controls="controls-panel">More</button>
+        <div id="controls-panel" class="controls-panel" aria-label="More map options">
+          <button id="clouds-toggle" class="menu-item" type="button" aria-pressed="false">
+            <span>Clouds</span><span id="clouds-state" class="menu-value">Off</span>
+          </button>
+          <button id="fullscreen-toggle" class="menu-item" type="button">Fullscreen</button>
+          <a id="workshop-link" class="menu-item external-link" href="https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894" target="_blank" rel="noopener noreferrer">Steam Workshop <span aria-hidden="true">↗</span></a>
+          <a id="github-link" class="menu-item external-link" href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+          <button id="about-open" class="menu-item about-button" type="button">About this map</button>
         </div>
       </div>
     </header>
 
     <p id="map-status" class="map-status" role="status">Loading interactive map…</p>
+    <p class="viewer-watermark" aria-label="Viewer version">
+      NoronhaMapExporter <span id="viewer-version">v1.0.0-rc.2</span>
+    </p>
 
     <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
       <button id="about-close" class="dialog-close" type="button" aria-label="Close About">×</button>
-      <p class="dialog-kicker">Official showcase terrain</p>
+      <p class="dialog-kicker">Interactive showcase</p>
       <h1 id="about-title">Fernando de Noronha</h1>
-      <p>NoronhaMapExporter exports native DayZ MapWidget cartography for compatible vanilla and custom terrains.</p>
+      <p>This viewer shows what NoronhaMapExporter can produce from DayZ's native MapWidget. It is a showcase, not a required part of the exporter.</p>
+      <div class="layer-guide" aria-label="Map layer guide">
+        <div><strong>Tourist</strong><span>Polished cartography with terrain relief.</span></div>
+        <div><strong>Clean</strong><span>The clean stitched MapWidget base.</span></div>
+        <div><strong>SatMap</strong><span>The source satellite raster.</span></div>
+      </div>
       <div class="dialog-links">
         <a href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894" target="_blank" rel="noopener noreferrer">Steam Workshop</a>
       </div>
+      <p class="dialog-version">Viewer <span id="about-version">v1.0.0-rc.2</span></p>
     </dialog>
 
     <script src="./vendor/leaflet/leaflet.js"></script>

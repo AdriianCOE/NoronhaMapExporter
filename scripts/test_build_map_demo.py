@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,17 @@ SPEC.loader.exec_module(BUILD_MAP_DEMO)
 
 
 class BuildMapDemoTests(unittest.TestCase):
+    def test_map_config_uses_the_current_viewer_identity_and_optional_clouds(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            BUILD_MAP_DEMO.write_map_config(output, [])
+            source = (output / "map-config.js").read_text(encoding="utf-8")
+            payload = source.removeprefix("window.NORONHA_MAP = ").removesuffix(";\n")
+            config = json.loads(payload)
+
+            self.assertEqual(config["viewerVersion"], "v1.0.0-rc.2")
+            self.assertFalse(config["cloudsEnabled"])
+
     def test_full_resolution_tiles_reconstruct_the_source_without_rotation_or_gaps(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

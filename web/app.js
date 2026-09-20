@@ -6,9 +6,10 @@
   const selector = document.getElementById("layer-select");
   const githubLink = document.getElementById("github-link");
   const workshopLink = document.getElementById("workshop-link");
-  const clouds = document.getElementById("cloud-layer");
   const cloudsToggle = document.getElementById("clouds-toggle");
   const cloudsState = document.getElementById("clouds-state");
+  const viewerVersion = document.getElementById("viewer-version");
+  const aboutVersion = document.getElementById("about-version");
   const resetButton = document.getElementById("reset-view");
   const fullscreenButton = document.getElementById("fullscreen-toggle");
   const menuToggle = document.getElementById("menu-toggle");
@@ -37,8 +38,14 @@
   });
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
+  map.createPane("cloudPane");
+  map.getPane("cloudPane").style.zIndex = "350";
+  map.getPane("cloudPane").style.pointerEvents = "none";
   githubLink.href = config.githubUrl || githubLink.href;
   workshopLink.href = config.workshopUrl || workshopLink.href;
+  const version = config.viewerVersion || "v1.0.0-rc.2";
+  viewerVersion.textContent = version;
+  aboutVersion.textContent = version;
 
   if (!Array.isArray(config.layers) || config.layers.length === 0) {
     status.textContent = "Map tiles have not been published yet. Build the local map package before deploying Pages.";
@@ -48,7 +55,8 @@
 
   let activeLayer;
   let activeTileLayer;
-  let cloudsEnabled = config.cloudsEnabled !== false;
+  let cloudOverlay;
+  let cloudsEnabled = config.cloudsEnabled === true;
 
   function boundsFor(layer) {
     const southWest = map.unproject([0, layer.height], layer.maxZoom);
@@ -64,6 +72,29 @@
     const southWest = map.unproject([left, bottom], layer.maxZoom);
     const northEast = map.unproject([right, top], layer.maxZoom);
     return L.latLngBounds(southWest, northEast);
+  }
+
+  function syncCloudOverlay(bounds) {
+    if (!cloudOverlay) {
+      cloudOverlay = L.imageOverlay("./assets/clouds.webp", bounds, {
+        pane: "cloudPane",
+        opacity: 0.16,
+        interactive: false,
+        className: "weather-clouds"
+      });
+      cloudOverlay.on("error", () => {
+        status.textContent = "The optional cloud layer could not be loaded.";
+        status.classList.remove("is-hidden");
+      });
+    } else {
+      cloudOverlay.setBounds(bounds);
+    }
+
+    if (cloudsEnabled && !map.hasLayer(cloudOverlay)) {
+      cloudOverlay.addTo(map);
+    } else if (!cloudsEnabled && map.hasLayer(cloudOverlay)) {
+      map.removeLayer(cloudOverlay);
+    }
   }
 
   function showLayer(id) {
@@ -99,6 +130,7 @@
     activeLayer = layer;
     map.setMaxBounds(bounds.pad(0.08));
     map.setMaxZoom(layer.maxZoom);
+    syncCloudOverlay(bounds);
     if (previousView) {
       map.setView(previousView.center, Math.min(previousView.zoom, layer.maxZoom), { animate: false });
     } else {
@@ -114,9 +146,11 @@
 
   function setClouds(enabled) {
     cloudsEnabled = enabled;
-    clouds.hidden = !enabled;
     cloudsToggle.setAttribute("aria-pressed", String(enabled));
     cloudsState.textContent = enabled ? "On" : "Off";
+    if (activeLayer) {
+      syncCloudOverlay(boundsFor(activeLayer));
+    }
   }
 
   function closeMenu() {
@@ -144,6 +178,14 @@
     controlsPanel.classList.toggle("is-open", open);
     menuToggle.setAttribute("aria-expanded", String(open));
   });
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest(".toolbar-actions")) closeMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMenu();
+  });
+  githubLink.addEventListener("click", closeMenu);
+  workshopLink.addEventListener("click", closeMenu);
   aboutOpen.addEventListener("click", () => {
     closeMenu();
     aboutDialog.showModal();
@@ -177,8 +219,8 @@
 
   const preferred = config.defaultLayer || config.layers[0].id;
   selector.value = preferred;
-  setClouds(cloudsEnabled);
   showLayer(preferred);
+  setClouds(cloudsEnabled);
 
   window.addEventListener("resize", () => {
     if (activeLayer) {

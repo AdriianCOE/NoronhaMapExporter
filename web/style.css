@@ -12,28 +12,9 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
 
 button, select, a { -webkit-tap-highlight-color: transparent; }
 
-.cloud-layer {
-  position: fixed;
-  z-index: 450;
-  inset: 0;
-  overflow: hidden;
+.weather-clouds {
+  filter: saturate(0) contrast(0.84) brightness(1.05) blur(0.25px);
   pointer-events: none;
-}
-
-.cloud-layer img {
-  position: absolute;
-  top: 5vh;
-  left: -6vw;
-  width: min(92vw, 1320px);
-  max-width: none;
-  opacity: 0.16;
-  filter: blur(0.35px);
-  animation: cloud-drift 90s ease-in-out infinite alternate;
-}
-
-@keyframes cloud-drift {
-  from { transform: translate3d(-1vw, 0, 0); }
-  to { transform: translate3d(2vw, 0.6vh, 0); }
 }
 
 .toolbar {
@@ -43,31 +24,43 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
   left: 50%;
   display: flex;
   align-items: center;
-  gap: 24px;
-  width: min(1040px, calc(100vw - 32px));
-  min-height: 70px;
-  padding: 12px 14px 12px 20px;
+  gap: 20px;
+  width: min(760px, calc(100vw - 32px));
+  min-height: 64px;
+  padding: 10px 12px 10px 18px;
   color: #f7fafc;
   background: rgb(20 29 36 / 94%);
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgb(6 10 13 / 28%);
+  border-radius: 15px;
+  box-shadow: 0 14px 36px rgb(6 10 13 / 28%);
   transform: translateX(-50%);
   backdrop-filter: blur(14px);
 }
 
 .brand { display: grid; gap: 2px; min-width: 0; }
-.brand strong { font-size: 16px; letter-spacing: -0.02em; }
+.brand strong { font-size: 15px; letter-spacing: -0.02em; }
 .brand span { color: #aab8c1; font-size: 12px; }
 
-.toolbar-actions { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.toolbar-actions { position: relative; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-.controls-panel { display: flex; align-items: center; gap: 8px; }
+.controls-panel {
+  position: absolute;
+  top: calc(100% + 13px);
+  right: 0;
+  display: none;
+  width: 236px;
+  padding: 8px;
+  background: rgb(20 29 36 / 97%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 13px;
+  box-shadow: 0 18px 42px rgb(6 10 13 / 38%);
+  backdrop-filter: blur(16px);
+}
+
+.controls-panel.is-open { display: grid; gap: 3px; }
 
 .layer-picker select,
-.control-button,
-.external-link,
-.menu-toggle {
+.primary-control {
   min-height: 38px;
   padding: 0 12px;
   color: #f7fafc;
@@ -81,29 +74,49 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 .layer-picker select { min-width: 108px; cursor: pointer; }
 .layer-picker select:disabled { color: #9caab4; cursor: wait; }
 
-.control-button,
-.menu-toggle { cursor: pointer; }
+.primary-control,
+.menu-item { cursor: pointer; }
 
-.external-link {
+.menu-item {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  color: #eaf1f4;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.external-link {
   text-decoration: none;
 }
 
 .layer-picker select:hover:not(:disabled),
-.control-button:hover,
-.external-link:hover,
-.menu-toggle:hover { background: rgb(255 255 255 / 12%); }
+.primary-control:hover { background: rgb(255 255 255 / 12%); }
 
-.control-button:focus-visible,
-.external-link:focus-visible,
-.menu-toggle:focus-visible,
+.menu-item:hover { background: rgb(255 255 255 / 8%); }
+
+.primary-control:focus-visible,
+.menu-item:focus-visible,
 .layer-picker select:focus-visible { outline: 2px solid #d6e6ee; outline-offset: 2px; }
 
-.control-button[aria-pressed="true"] #clouds-state { color: #cde8f4; }
-#clouds-state { color: #9caab4; font-size: 12px; }
-.menu-toggle { display: none; }
+.menu-item[aria-pressed="true"] .menu-value { color: #d5ebf4; background: rgb(121 177 202 / 18%); }
+.menu-value {
+  min-width: 34px;
+  padding: 3px 7px;
+  color: #91a1aa;
+  font-size: 11px;
+  text-align: center;
+  background: rgb(255 255 255 / 5%);
+  border-radius: 999px;
+}
 
 .about-dialog {
   width: min(420px, calc(100vw - 32px));
@@ -122,6 +135,11 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 .dialog-close { position: absolute; top: 12px; right: 14px; padding: 4px 8px; color: #dce7ec; font-size: 24px; background: transparent; border: 0; cursor: pointer; }
 .dialog-links { display: flex; gap: 16px; margin-top: 22px; }
 .dialog-links a { color: #d8ecf4; text-underline-offset: 3px; }
+.layer-guide { display: grid; gap: 1px; margin-top: 20px; overflow: hidden; border: 1px solid rgb(255 255 255 / 9%); border-radius: 11px; }
+.layer-guide div { display: grid; grid-template-columns: 72px 1fr; gap: 10px; padding: 10px 12px; background: rgb(255 255 255 / 4%); }
+.layer-guide strong { color: #eef4f7; font-size: 13px; }
+.layer-guide span { color: #aebdc5; font-size: 12px; line-height: 1.4; }
+.dialog-version { margin: 20px 0 0; color: #778993 !important; font-size: 11px; }
 
 .leaflet-control-zoom {
   overflow: hidden;
@@ -157,6 +175,23 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 
 .map-status.is-hidden { display: none; }
 
+.viewer-watermark {
+  position: fixed;
+  z-index: 700;
+  left: 15px;
+  bottom: 11px;
+  margin: 0;
+  color: rgb(25 41 50 / 48%);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 32%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.viewer-watermark span { font-weight: 500; }
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -169,30 +204,10 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
   border: 0;
 }
 
-@media (max-width: 1100px) {
-  .menu-toggle { display: inline-flex; align-items: center; }
-  .controls-panel {
-    position: absolute;
-    top: calc(100% + 14px);
-    right: 0;
-    display: none;
-    align-items: stretch;
-    width: 220px;
-    padding: 8px;
-    background: rgb(20 29 36 / 97%);
-    border: 1px solid rgb(255 255 255 / 12%);
-    border-radius: 13px;
-    box-shadow: 0 16px 34px rgb(6 10 13 / 34%);
-  }
-  .controls-panel.is-open { display: grid; }
-  .controls-panel .control-button,
-  .controls-panel .external-link { justify-content: flex-start; width: 100%; }
-}
-
 @media (max-width: 620px) {
   .toolbar {
     top: 10px;
-    gap: 12px;
+    gap: 8px;
     min-height: 62px;
     padding: 10px 11px 10px 14px;
     border-radius: 13px;
@@ -200,13 +215,18 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 
   .brand span { display: none; }
   .brand strong { font-size: 14px; }
-  .toolbar-actions { gap: 7px; }
-  .layer-picker select, .control-button, .external-link, .menu-toggle { min-height: 36px; padding: 0 10px; font-size: 12px; }
+  .toolbar-actions { gap: 6px; }
+  .layer-picker select, .primary-control { min-height: 36px; padding: 0 9px; font-size: 12px; }
   .layer-picker select { min-width: 84px; }
-  .cloud-layer img { top: 12vh; left: -34vw; width: 180vw; opacity: 0.13; }
   .map-status { right: 10px; bottom: 8px; font-size: 11px; }
+  .viewer-watermark { left: 10px; bottom: 7px; font-size: 9px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cloud-layer img { animation: none; }
+@media (max-width: 430px) {
+  .toolbar { width: calc(100vw - 20px); padding-left: 12px; }
+  .brand { flex: 1 1 auto; }
+  .brand strong { max-width: 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .layer-picker select { min-width: 78px; }
+  .primary-control { padding: 0 8px; }
+  .controls-panel { width: min(236px, calc(100vw - 24px)); }
 }
