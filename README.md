@@ -32,6 +32,14 @@ When DayZDiag opens:
 3. Press `F8` once.
 4. Wait for the export to finish.
 
+Repeat these steps whenever DayZDiag opens for an enabled export (the default overview and detail exports open separately). Keep DayZDiag visible, not minimized, and unobstructed while captures are running.
+
+The main result is written to:
+
+```text
+output/<world>/2d/detail.png
+```
+
 The script detects completion automatically.
 
 ## What it exports
@@ -70,6 +78,8 @@ A minimal custom-terrain configuration looks like this:
 
 `world.name` is the DayZ world/config name, not the Steam Workshop display name. `world.size` is the terrain width in metres, not pixels. For an installed vanilla world, `terrainMod` can be `null`.
 
+If a terrain requires dependency mods, add their folders to `paths.additionalMods`. Some terrains also require their own offline mission instead of the generated minimal mission.
+
 ## Compatibility
 
 NoronhaMapExporter is designed around DayZ's native `MapWidget` and is not tied to a single terrain.
@@ -100,6 +110,12 @@ The optional tourist pipeline can add terrain relief without modifying the clean
 The public defaults live in [`config.example.json`](config.example.json) and are intentionally conservative so roads, buildings, vegetation, labels, and native contour lines remain readable.
 
 Satellite export is separate from the MapWidget pipeline and uses an explicit source raster. Neither tourist relief nor satellite output is required for a normal 2D export.
+
+Run it with:
+
+```powershell
+.\run-satmap.ps1
+```
 
 ## FAQ
 
