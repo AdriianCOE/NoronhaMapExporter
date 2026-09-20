@@ -78,9 +78,9 @@ Hillshade is optional post-processing. When enabled, it needs an authoritative A
 
 | World | Config name | Current status | Notes |
 | --- | --- | --- | --- |
-| Fernando de Noronha | user supplied | example custom terrain | original project terrain; not a technical default |
-| Chernarus | `ChernarusPlus` | local package detected | 15360 m; runtime smoke pending |
-| Livonia | `Enoch` | local package detected | 12800 m; requires installed content; runtime smoke pending |
+| Fernando de Noronha | user supplied | tested | custom-terrain runtime smoke; 10240 m |
+| Chernarus | `ChernarusPlus` | tested | 15360 m runtime smoke |
+| Livonia | `Enoch` | tested | 12800 m runtime smoke |
 | Other custom terrains | user supplied | compatible configuration | provide the terrain mod, mission, class name, and width |
 
 Other installed worlds may work but are unverified.

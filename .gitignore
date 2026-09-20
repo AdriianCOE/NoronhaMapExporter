@@ -3,6 +3,8 @@
 *.bisign
 *.bikey
 /build/
+/bin/
+/obj/
 /capture-helper/bin/
 /capture-helper/obj/
 /addon/config.bin
