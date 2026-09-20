@@ -35,6 +35,27 @@ jobs:
           rm -rf _site/.git
           rsync -a --delete --exclude map-config.js --exclude map-package-manifest.json --exclude tiles/ web/ _site/
 
+      - name: Set published viewer version
+        run: |
+          VERSION="$(sed -n 's/^version = "\(.*\)";$/\1/p' addon/mod.cpp)"
+          python3 - "$VERSION" <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          config = Path("_site/map-config.js")
+          text = config.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r'("viewerVersion"\s*:\s*")[^"]+("\s*,)',
+              rf'\g<1>v{sys.argv[1]}\g<2>',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Could not update viewerVersion in generated map-config.js")
+          config.write_text(updated, encoding="utf-8")
+          PY
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
