@@ -32,7 +32,10 @@ if ($LocationOverridePath -and -not (Test-Path -LiteralPath $LocationOverridePat
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repoRoot 'build\@NoronhaMapExporter\Addons' }
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
 $packageRoot = Split-Path -Parent $OutputDirectory
-$stageSourceDirectory = Join-Path $repoRoot ('.runtime\addon-stage\' + $CartographyStyle + '\addon')
+# AddonBuilder derives the PBO prefix from the source directory name when
+# packing without a project file. Keep that name aligned with CfgMods' script
+# path; otherwise the config loads but mission scripts are not discoverable.
+$stageSourceDirectory = Join-Path $repoRoot ('.runtime\addon-stage\' + $CartographyStyle + '\DayZMapExporter')
 New-Item -ItemType Directory -Force -Path $stageSourceDirectory, $OutputDirectory | Out-Null
 Copy-Item -Path (Join-Path $sourceDirectory '*') -Destination $stageSourceDirectory -Recurse -Force
 
@@ -53,7 +56,7 @@ if ($LASTEXITCODE -ne 0) { throw "CfgConvert binarization failed with exit code 
 & $addonBuilder $stageSourceDirectory $OutputDirectory '-packonly'
 if ($LASTEXITCODE -ne 0) { throw "AddonBuilder failed with exit code $LASTEXITCODE" }
 
-$generatedPbo = Join-Path $OutputDirectory 'addon.pbo'
+$generatedPbo = Join-Path $OutputDirectory 'DayZMapExporter.pbo'
 $namedPbo = Join-Path $OutputDirectory 'NoronhaMapExporter.pbo'
 if (-not (Test-Path -LiteralPath $generatedPbo -PathType Leaf)) { throw "Expected AddonBuilder output was not created: $generatedPbo" }
 if (Test-Path -LiteralPath $namedPbo -PathType Leaf) { Remove-Item -LiteralPath $namedPbo -Force }
