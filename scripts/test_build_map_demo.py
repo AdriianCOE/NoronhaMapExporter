@@ -29,7 +29,7 @@ class BuildMapDemoTests(unittest.TestCase):
             config = json.loads(payload)
 
             self.assertEqual(config["viewerVersion"], "v1.0.0-rc.2")
-            self.assertFalse(config["cloudsEnabled"])
+            self.assertTrue(config["cloudsEnabled"])
 
     def test_full_resolution_tiles_reconstruct_the_source_without_rotation_or_gaps(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

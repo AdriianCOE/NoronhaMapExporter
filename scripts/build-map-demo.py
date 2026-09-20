@@ -126,7 +126,7 @@ def write_map_config(output: Path, layers: list[dict[str, object]]) -> None:
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894",
         "viewerVersion": "v1.0.0-rc.2",
         "defaultLayer": "tourist",
-        "cloudsEnabled": False,
+        "cloudsEnabled": True,
         "layers": [{key: value for key, value in layer.items() if key not in ("source", "sourceSha256", "tiles")} for layer in layers],
     }
     (output / "map-config.js").write_text("window.NORONHA_MAP = " + json.dumps(config, indent=2) + ";\n", encoding="utf-8")

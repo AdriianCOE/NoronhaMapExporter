@@ -10,13 +10,10 @@
   const cloudsState = document.getElementById("clouds-state");
   const viewerVersion = document.getElementById("viewer-version");
   const aboutVersion = document.getElementById("about-version");
-  const resetButton = document.getElementById("reset-view");
-  const fullscreenButton = document.getElementById("fullscreen-toggle");
-  const menuToggle = document.getElementById("menu-toggle");
-  const controlsPanel = document.getElementById("controls-panel");
   const aboutDialog = document.getElementById("about-dialog");
   const aboutOpen = document.getElementById("about-open");
   const aboutClose = document.getElementById("about-close");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const tileSize = config.layers?.[0]?.tileSize || 256;
   const pixelCrs = L.Util.extend({}, L.CRS.Simple, {
     scale(zoom) {
@@ -37,6 +34,27 @@
     preferCanvas: true
   });
 
+  const cloudSystems = [
+    {
+      src: "./assets/cloud-system-1.webp",
+      x: -0.04, y: -0.01, width: 0.72, height: 0.43,
+      opacity: 0.34, driftX: 0.035, driftY: 0.012,
+      duration: 190000, phase: 0
+    },
+    {
+      src: "./assets/cloud-system-2.webp",
+      x: 0.42, y: 0.10, width: 0.54, height: 0.36,
+      opacity: 0.27, driftX: -0.026, driftY: 0.017,
+      duration: 235000, phase: Math.PI * 0.72
+    },
+    {
+      src: "./assets/cloud-system-3.webp",
+      x: 0.12, y: 0.50, width: 0.72, height: 0.32,
+      opacity: 0.25, driftX: 0.028, driftY: -0.014,
+      duration: 275000, phase: Math.PI * 1.38
+    }
+  ];
+
   L.control.zoom({ position: "bottomright" }).addTo(map);
   map.createPane("cloudPane");
   map.getPane("cloudPane").style.zIndex = "350";
@@ -55,8 +73,21 @@
 
   let activeLayer;
   let activeTileLayer;
-  let cloudOverlay;
-  let cloudsEnabled = config.cloudsEnabled === true;
+  let cloudsEnabled = config.cloudsEnabled !== false;
+  let cloudAnimationFrame;
+  const cloudOverlays = cloudSystems.map((system, index) => {
+    const overlay = L.imageOverlay(system.src, [[0, 0], [0, 0]], {
+      pane: "cloudPane",
+      opacity: system.opacity,
+      interactive: false,
+      className: `weather-cloud weather-cloud-${index + 1}`
+    });
+    overlay.on("error", () => {
+      status.textContent = "An optional cloud system could not be loaded.";
+      status.classList.remove("is-hidden");
+    });
+    return overlay;
+  });
 
   function boundsFor(layer) {
     const southWest = map.unproject([0, layer.height], layer.maxZoom);
@@ -65,50 +96,74 @@
   }
 
   function initialBoundsFor(layer) {
-    if (!Array.isArray(layer.initialBounds) || layer.initialBounds.length !== 4) {
-      return boundsFor(layer);
-    }
+    if (!Array.isArray(layer.initialBounds) || layer.initialBounds.length !== 4) return boundsFor(layer);
     const [left, top, right, bottom] = layer.initialBounds;
-    const southWest = map.unproject([left, bottom], layer.maxZoom);
-    const northEast = map.unproject([right, top], layer.maxZoom);
-    return L.latLngBounds(southWest, northEast);
+    return L.latLngBounds(
+      map.unproject([left, bottom], layer.maxZoom),
+      map.unproject([right, top], layer.maxZoom)
+    );
   }
 
-  function syncCloudOverlay(bounds) {
-    if (!cloudOverlay) {
-      cloudOverlay = L.imageOverlay("./assets/clouds.webp", bounds, {
-        pane: "cloudPane",
-        opacity: 0.16,
-        interactive: false,
-        className: "weather-clouds"
-      });
-      cloudOverlay.on("error", () => {
-        status.textContent = "The optional cloud layer could not be loaded.";
-        status.classList.remove("is-hidden");
-      });
-    } else {
-      cloudOverlay.setBounds(bounds);
-    }
+  function cloudBounds(system, offsetX = 0, offsetY = 0) {
+    const left = (system.x + offsetX) * activeLayer.width;
+    const top = (system.y + offsetY) * activeLayer.height;
+    const right = left + system.width * activeLayer.width;
+    const bottom = top + system.height * activeLayer.height;
+    return L.latLngBounds(
+      map.unproject([left, bottom], activeLayer.maxZoom),
+      map.unproject([right, top], activeLayer.maxZoom)
+    );
+  }
 
-    if (cloudsEnabled && !map.hasLayer(cloudOverlay)) {
-      cloudOverlay.addTo(map);
-    } else if (!cloudsEnabled && map.hasLayer(cloudOverlay)) {
-      map.removeLayer(cloudOverlay);
+  function positionClouds(timestamp) {
+    if (!activeLayer) return;
+    cloudSystems.forEach((system, index) => {
+      const angle = reducedMotion.matches
+        ? system.phase
+        : ((timestamp % system.duration) / system.duration) * Math.PI * 2 + system.phase;
+      const offsetX = reducedMotion.matches ? 0 : Math.sin(angle) * system.driftX;
+      const offsetY = reducedMotion.matches ? 0 : Math.cos(angle * 0.72) * system.driftY;
+      cloudOverlays[index].setBounds(cloudBounds(system, offsetX, offsetY));
+    });
+  }
+
+  function animateClouds(timestamp) {
+    positionClouds(timestamp);
+    if (cloudsEnabled && !reducedMotion.matches) {
+      cloudAnimationFrame = window.requestAnimationFrame(animateClouds);
+    }
+  }
+
+  function stopCloudAnimation() {
+    if (cloudAnimationFrame) {
+      window.cancelAnimationFrame(cloudAnimationFrame);
+      cloudAnimationFrame = undefined;
+    }
+  }
+
+  function syncClouds() {
+    if (!activeLayer) return;
+    stopCloudAnimation();
+    positionClouds(performance.now());
+    cloudOverlays.forEach((overlay) => {
+      if (cloudsEnabled && !map.hasLayer(overlay)) overlay.addTo(map);
+      if (!cloudsEnabled && map.hasLayer(overlay)) map.removeLayer(overlay);
+    });
+    if (cloudsEnabled && !reducedMotion.matches) {
+      cloudAnimationFrame = window.requestAnimationFrame(animateClouds);
     }
   }
 
   function showLayer(id) {
     const layer = config.layers.find((candidate) => candidate.id === id) || config.layers[0];
     const previousView = activeLayer ? { center: map.getCenter(), zoom: map.getZoom() } : null;
-    if (activeTileLayer) {
-      map.removeLayer(activeTileLayer);
-    }
+    if (activeTileLayer) map.removeLayer(activeTileLayer);
 
     const bounds = boundsFor(layer);
     activeTileLayer = L.tileLayer(`./tiles/${layer.id}/${layer.revision}/{z}/{x}/{y}.${layer.format}`, {
       bounds,
       tileSize: layer.tileSize,
-      minZoom: 0,
+      minZoom: map.getMinZoom(),
       maxZoom: layer.maxZoom,
       minNativeZoom: 0,
       maxNativeZoom: layer.maxZoom,
@@ -130,7 +185,7 @@
     activeLayer = layer;
     map.setMaxBounds(bounds.pad(0.08));
     map.setMaxZoom(layer.maxZoom);
-    syncCloudOverlay(bounds);
+    syncClouds();
     if (previousView) {
       map.setView(previousView.center, Math.min(previousView.zoom, layer.maxZoom), { animate: false });
     } else {
@@ -139,23 +194,15 @@
     }
   }
 
-  function resetView() {
-    if (!activeLayer) return;
-    map.fitBounds(initialBoundsFor(activeLayer), { padding: [42, 42], animate: false });
-  }
-
   function setClouds(enabled) {
     cloudsEnabled = enabled;
     cloudsToggle.setAttribute("aria-pressed", String(enabled));
     cloudsState.textContent = enabled ? "On" : "Off";
-    if (activeLayer) {
-      syncCloudOverlay(boundsFor(activeLayer));
-    }
+    syncClouds();
   }
 
-  function closeMenu() {
-    controlsPanel.classList.remove("is-open");
-    menuToggle.setAttribute("aria-expanded", "false");
+  function closeAbout() {
+    if (aboutDialog.open) aboutDialog.close();
   }
 
   for (const layer of config.layers) {
@@ -169,53 +216,15 @@
   selector.addEventListener("change", () => showLayer(selector.value));
 
   cloudsToggle.addEventListener("click", () => setClouds(!cloudsEnabled));
-  resetButton.addEventListener("click", () => {
-    resetView();
-    closeMenu();
-  });
-  menuToggle.addEventListener("click", () => {
-    const open = !controlsPanel.classList.contains("is-open");
-    controlsPanel.classList.toggle("is-open", open);
-    menuToggle.setAttribute("aria-expanded", String(open));
-  });
-  document.addEventListener("pointerdown", (event) => {
-    if (!event.target.closest(".toolbar-actions")) closeMenu();
+  aboutOpen.addEventListener("click", () => aboutDialog.showModal());
+  aboutClose.addEventListener("click", closeAbout);
+  aboutDialog.addEventListener("click", (event) => {
+    if (event.target === aboutDialog) closeAbout();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeMenu();
+    if (event.key === "Escape") closeAbout();
   });
-  githubLink.addEventListener("click", closeMenu);
-  workshopLink.addEventListener("click", closeMenu);
-  aboutOpen.addEventListener("click", () => {
-    closeMenu();
-    aboutDialog.showModal();
-  });
-  aboutClose.addEventListener("click", () => aboutDialog.close());
-  aboutDialog.addEventListener("click", (event) => {
-    if (event.target === aboutDialog) aboutDialog.close();
-  });
-
-  if (document.documentElement.requestFullscreen) {
-    fullscreenButton.addEventListener("click", async () => {
-      closeMenu();
-      try {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        } else {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch {
-        status.textContent = "Fullscreen is not available in this browser.";
-        status.classList.remove("is-hidden");
-      }
-    });
-    document.addEventListener("fullscreenchange", () => {
-      fullscreenButton.textContent = document.fullscreenElement ? "Exit fullscreen" : "Fullscreen";
-      map.invalidateSize({ animate: false });
-    });
-  } else {
-    fullscreenButton.hidden = true;
-  }
+  reducedMotion.addEventListener("change", syncClouds);
 
   const preferred = config.defaultLayer || config.layers[0].id;
   selector.value = preferred;
@@ -223,8 +232,6 @@
   setClouds(cloudsEnabled);
 
   window.addEventListener("resize", () => {
-    if (activeLayer) {
-      map.invalidateSize({ animate: false });
-    }
+    if (activeLayer) map.invalidateSize({ animate: false });
   });
 }());
