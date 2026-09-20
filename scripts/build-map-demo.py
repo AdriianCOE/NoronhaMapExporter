@@ -60,11 +60,15 @@ def build_layer(
     tile_size: int,
     quality: int,
     initial_bounds: tuple[int, int, int, int] | None,
+    canvas_size: tuple[int, int] | None = None,
 ) -> dict[str, object]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", Image.DecompressionBombWarning)
         with Image.open(layer.source) as opened:
             source = opened.convert("RGB")
+            source_width, source_height = source.size
+            if canvas_size and source.size != canvas_size:
+                source = source.resize(canvas_size, Image.Resampling.LANCZOS)
             width, height = source.size
             if initial_bounds:
                 left, top, right, bottom = initial_bounds
@@ -92,6 +96,8 @@ def build_layer(
         "name": layer.name,
         "source": str(layer.source),
         "sourceSha256": sha256(layer.source),
+        "sourceWidth": source_width,
+        "sourceHeight": source_height,
         "width": width,
         "height": height,
         "tileSize": tile_size,
@@ -117,6 +123,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tourist", type=Path, required=True, help="Tourist master PNG (required default layer).")
     parser.add_argument("--clean", type=Path, help="Optional clean MapWidget master PNG.")
+    parser.add_argument("--satmap", type=Path, help="Optional source satellite map master.")
     parser.add_argument("--native", type=Path, help="Optional raw native MapWidget reference PNG.")
     parser.add_argument("--output", type=Path, default=Path(".runtime/web-map"), help="Generated Pages directory.")
     parser.add_argument("--clean-output", action="store_true", help="Remove the existing generated output before building.")
@@ -139,6 +146,8 @@ def main() -> int:
     ]
     if args.clean:
         layers.append(LayerInput("clean", "Clean", require_image(args.clean)))
+    if args.satmap:
+        layers.append(LayerInput("satmap", "SatMap", require_image(args.satmap)))
     if args.native:
         layers.append(LayerInput("native", "Native", require_image(args.native)))
 
@@ -152,8 +161,19 @@ def main() -> int:
         shutil.rmtree(output)
     shutil.copytree(source_root, output)
 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", Image.DecompressionBombWarning)
+        with Image.open(layers[0].source) as primary:
+            canvas_size = primary.size
     generated = [
-        build_layer(layer, output / "tiles", args.tile_size, args.quality, tuple(args.initial_bounds) if args.initial_bounds else None)
+        build_layer(
+            layer,
+            output / "tiles",
+            args.tile_size,
+            args.quality,
+            tuple(args.initial_bounds) if args.initial_bounds else None,
+            canvas_size,
+        )
         for layer in layers
     ]
     write_map_config(output, generated)

@@ -37,6 +37,7 @@ class BuildMapDemoTests(unittest.TestCase):
             self.assertEqual(result["maxZoom"], 2)
             self.assertEqual(result["tiles"], 9)
             self.assertEqual(result["initialBounds"], [0, 0, 600, 400])
+            self.assertEqual((result["sourceWidth"], result["sourceHeight"]), (600, 400))
 
             reconstruction = Image.new("RGB", image.size)
             for column in range(3):
@@ -46,6 +47,25 @@ class BuildMapDemoTests(unittest.TestCase):
                         reconstruction.paste(tile.convert("RGB"), (column * 256, row * 256))
             self.assertEqual(reconstruction.tobytes(), image.tobytes())
             self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), original_hash)
+
+    def test_secondary_layer_can_be_normalized_to_the_primary_canvas(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "satmap.png"
+            Image.new("RGB", (640, 480), "navy").save(source)
+
+            result = BUILD_MAP_DEMO.build_layer(
+                BUILD_MAP_DEMO.LayerInput("satmap", "SatMap", source),
+                root / "tiles",
+                256,
+                90,
+                (0, 0, 600, 400),
+                (600, 400),
+            )
+
+            self.assertEqual((result["sourceWidth"], result["sourceHeight"]), (640, 480))
+            self.assertEqual((result["width"], result["height"]), (600, 400))
+            self.assertEqual(result["initialBounds"], [0, 0, 600, 400])
 
 
 if __name__ == "__main__":

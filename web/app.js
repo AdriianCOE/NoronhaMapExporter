@@ -55,6 +55,7 @@
 
   function showLayer(id) {
     const layer = config.layers.find((candidate) => candidate.id === id) || config.layers[0];
+    const previousView = activeLayer ? { center: map.getCenter(), zoom: map.getZoom() } : null;
     if (activeTileLayer) {
       map.removeLayer(activeTileLayer);
     }
@@ -75,8 +76,12 @@
     activeLayer = layer;
     map.setMaxBounds(bounds.pad(0.08));
     map.setMaxZoom(layer.maxZoom);
-    map.fitBounds(initialBoundsFor(layer), { padding: [42, 42], animate: false });
-    map.setMinZoom(map.getZoom() - 0.25);
+    if (previousView) {
+      map.setView(previousView.center, Math.min(previousView.zoom, layer.maxZoom), { animate: false });
+    } else {
+      map.fitBounds(initialBoundsFor(layer), { padding: [42, 42], animate: false });
+      map.setMinZoom(map.getZoom());
+    }
     status.classList.add("is-hidden");
   }
 
