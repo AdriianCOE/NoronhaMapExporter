@@ -89,15 +89,22 @@ def _fractal_noise(spec: FieldSpec) -> Image.Image:
 
 def _edge_feather(size: tuple[int, int]) -> Image.Image:
     width, height = size
-    feather_x = max(1, int(width * 0.19))
-    feather_y = max(1, int(height * 0.23))
+    # The animated image is larger than its geographic wrapper. Keep a fully
+    # transparent guard band inside the texture so motion never exposes a
+    # low-alpha rectangle at the wrapper boundary on dark map layers.
+    guard_x = max(1, int(width * 0.12))
+    guard_y = max(1, int(height * 0.14))
+    feather_x = max(1, int(width * 0.15))
+    feather_y = max(1, int(height * 0.17))
     horizontal_values = []
     for x in range(width):
-        value = min(1.0, x / feather_x, (width - 1 - x) / feather_x)
+        distance = min(x, width - 1 - x)
+        value = min(1.0, max(0.0, (distance - guard_x) / feather_x))
         horizontal_values.append(round(255 * value * value * (3.0 - 2.0 * value)))
     vertical_values = []
     for y in range(height):
-        value = min(1.0, y / feather_y, (height - 1 - y) / feather_y)
+        distance = min(y, height - 1 - y)
+        value = min(1.0, max(0.0, (distance - guard_y) / feather_y))
         vertical_values.append(round(255 * value * value * (3.0 - 2.0 * value)))
 
     horizontal = Image.new("L", (width, 1))

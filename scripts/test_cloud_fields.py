@@ -39,6 +39,13 @@ class CloudFieldTests(unittest.TestCase):
             for point in corners:
                 self.assertEqual(image.getpixel(point), (0, 0, 0, 0))
 
+            guard_x = int(image.width * 0.11)
+            guard_y = int(image.height * 0.13)
+            self.assertEqual(alpha.crop((0, 0, guard_x, image.height)).getextrema(), (0, 0))
+            self.assertEqual(alpha.crop((image.width - guard_x, 0, image.width, image.height)).getextrema(), (0, 0))
+            self.assertEqual(alpha.crop((0, 0, image.width, guard_y)).getextrema(), (0, 0))
+            self.assertEqual(alpha.crop((0, image.height - guard_y, image.width, image.height)).getextrema(), (0, 0))
+
             transparent_rgb = {
                 pixel[:3]
                 for pixel in image.get_flattened_data()
