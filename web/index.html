@@ -4,18 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#172129">
-    <meta name="description" content="Interactive preview of a native DayZ map export.">
-    <title>NoronhaMapExporter — Interactive map</title>
+    <meta name="description" content="Explore the Fernando de Noronha showcase for NoronhaMapExporter.">
+    <title>Fernando de Noronha — NoronhaMapExporter</title>
+    <link rel="icon" type="image/png" href="./assets/favicon.png">
     <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
     <main id="map" aria-label="Interactive Noronha map"></main>
 
+    <div id="cloud-layer" class="cloud-layer" aria-hidden="true">
+      <img src="./assets/clouds.svg" alt="">
+    </div>
+
     <header class="toolbar" aria-label="Map controls">
       <div class="brand">
         <strong>NoronhaMapExporter</strong>
-        <span>Interactive export preview</span>
+        <span>Fernando de Noronha, Brazil <span aria-hidden="true">🇧🇷</span></span>
       </div>
       <div class="toolbar-actions">
         <label class="layer-picker" for="layer-select">
@@ -24,13 +29,30 @@
             <option>Loading map…</option>
           </select>
         </label>
-        <a id="github-link" class="github-link" href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noreferrer">
-          GitHub <span aria-hidden="true">↗</span>
-        </a>
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-expanded="false" aria-controls="controls-panel">Menu</button>
+        <div id="controls-panel" class="controls-panel">
+          <button id="clouds-toggle" class="control-button" type="button" aria-pressed="true">Clouds <span id="clouds-state">On</span></button>
+          <button id="reset-view" class="control-button" type="button">Reset view</button>
+          <button id="fullscreen-toggle" class="control-button" type="button">Fullscreen</button>
+          <a id="github-link" class="external-link" href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+          <a id="workshop-link" class="external-link" href="https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894" target="_blank" rel="noopener noreferrer">Workshop <span aria-hidden="true">↗</span></a>
+          <button id="about-open" class="control-button about-button" type="button">About</button>
+        </div>
       </div>
     </header>
 
     <p id="map-status" class="map-status" role="status">Loading interactive map…</p>
+
+    <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
+      <button id="about-close" class="dialog-close" type="button" aria-label="Close About">×</button>
+      <p class="dialog-kicker">Official showcase terrain</p>
+      <h1 id="about-title">Fernando de Noronha</h1>
+      <p>NoronhaMapExporter exports native DayZ MapWidget cartography for compatible vanilla and custom terrains.</p>
+      <div class="dialog-links">
+        <a href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894" target="_blank" rel="noopener noreferrer">Steam Workshop</a>
+      </div>
+    </dialog>
 
     <script src="./vendor/leaflet/leaflet.js"></script>
     <script src="./map-config.js"></script>

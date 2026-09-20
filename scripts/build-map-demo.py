@@ -62,6 +62,8 @@ def build_layer(
     initial_bounds: tuple[int, int, int, int] | None,
     canvas_size: tuple[int, int] | None = None,
 ) -> dict[str, object]:
+    source_hash = sha256(layer.source)
+    revision = source_hash[:12]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", Image.DecompressionBombWarning)
         with Image.open(layer.source) as opened:
@@ -90,14 +92,20 @@ def build_layer(
                         crop = level.crop((left, top, min(left + tile_size, level.width), min(top + tile_size, level.height)))
                         tile = Image.new("RGBA", (tile_size, tile_size), (0, 0, 0, 0))
                         tile.paste(crop, (0, 0))
-                        save_tile(tile, tiles_root / layer.identifier / str(zoom) / str(column) / f"{row}.webp", zoom == max_zoom, quality)
+                        save_tile(
+                            tile,
+                            tiles_root / layer.identifier / revision / str(zoom) / str(column) / f"{row}.webp",
+                            zoom == max_zoom,
+                            quality,
+                        )
                         tile_count += 1
 
     result = {
         "id": layer.identifier,
         "name": layer.name,
         "source": str(layer.source),
-        "sourceSha256": sha256(layer.source),
+        "sourceSha256": source_hash,
+        "revision": revision,
         "sourceWidth": source_width,
         "sourceHeight": source_height,
         "width": width,
@@ -115,7 +123,9 @@ def build_layer(
 def write_map_config(output: Path, layers: list[dict[str, object]]) -> None:
     config = {
         "githubUrl": "https://github.com/AdriianCOE/NoronhaMapExporter",
+        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894",
         "defaultLayer": "tourist",
+        "cloudsEnabled": True,
         "layers": [{key: value for key, value in layer.items() if key not in ("source", "sourceSha256", "tiles")} for layer in layers],
     }
     (output / "map-config.js").write_text("window.NORONHA_MAP = " + json.dumps(config, indent=2) + ";\n", encoding="utf-8")

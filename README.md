@@ -2,7 +2,7 @@
 
 Export the native DayZ map as a high-resolution, lossless image.
 
-![Full Fernando de Noronha export with hillshade](images/examples/noronha-master.jpg)
+[![Full Fernando de Noronha export with hillshade](images/examples/noronha-master.jpg)](https://adriiancoe.github.io/NoronhaMapExporter/)
 
 I built this while working on my Fernando de Noronha terrain. I spent far too
 long looking for a reliable way to export the native DayZ map at high
@@ -11,7 +11,11 @@ resolution, so eventually I stopped looking and made one.
 It solved my problem, so I cleaned it up for other terrain makers too. Despite
 the name, NoronhaMapExporter is made for any compatible DayZ terrain.
 
-[Explore the interactive Noronha map →](https://adriiancoe.github.io/NoronhaMapExporter/)
+[Explore the Fernando de Noronha interactive demo →](https://adriiancoe.github.io/NoronhaMapExporter/) · [Download the latest release →](https://github.com/AdriianCOE/NoronhaMapExporter/releases/latest)
+
+The interactive map is a showcase of the [Fernando de Noronha terrain on
+Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3682451894).
+The exporter itself is designed for compatible vanilla and custom DayZ worlds.
 
 ## Get started
 

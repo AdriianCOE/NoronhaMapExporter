@@ -10,6 +10,32 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
 
 #map { background: #b9d2df; }
 
+button, select, a { -webkit-tap-highlight-color: transparent; }
+
+.cloud-layer {
+  position: fixed;
+  z-index: 450;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cloud-layer img {
+  position: absolute;
+  top: 5vh;
+  left: -6vw;
+  width: min(92vw, 1320px);
+  max-width: none;
+  opacity: 0.16;
+  filter: blur(0.35px);
+  animation: cloud-drift 90s ease-in-out infinite alternate;
+}
+
+@keyframes cloud-drift {
+  from { transform: translate3d(-1vw, 0, 0); }
+  to { transform: translate3d(2vw, 0.6vh, 0); }
+}
+
 .toolbar {
   position: fixed;
   z-index: 1000;
@@ -17,8 +43,8 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
   left: 50%;
   display: flex;
   align-items: center;
-  gap: 28px;
-  width: min(720px, calc(100vw - 32px));
+  gap: 24px;
+  width: min(1040px, calc(100vw - 32px));
   min-height: 70px;
   padding: 12px 14px 12px 20px;
   color: #f7fafc;
@@ -34,10 +60,14 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
 .brand strong { font-size: 16px; letter-spacing: -0.02em; }
 .brand span { color: #aab8c1; font-size: 12px; }
 
-.toolbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.toolbar-actions { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.controls-panel { display: flex; align-items: center; gap: 8px; }
 
 .layer-picker select,
-.github-link {
+.control-button,
+.external-link,
+.menu-toggle {
   min-height: 38px;
   padding: 0 12px;
   color: #f7fafc;
@@ -48,10 +78,13 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
   border-radius: 10px;
 }
 
-.layer-picker select { min-width: 112px; cursor: pointer; }
+.layer-picker select { min-width: 108px; cursor: pointer; }
 .layer-picker select:disabled { color: #9caab4; cursor: wait; }
 
-.github-link {
+.control-button,
+.menu-toggle { cursor: pointer; }
+
+.external-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -59,10 +92,36 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
 }
 
 .layer-picker select:hover:not(:disabled),
-.github-link:hover { background: rgb(255 255 255 / 12%); }
+.control-button:hover,
+.external-link:hover,
+.menu-toggle:hover { background: rgb(255 255 255 / 12%); }
 
-.github-link:focus-visible,
+.control-button:focus-visible,
+.external-link:focus-visible,
+.menu-toggle:focus-visible,
 .layer-picker select:focus-visible { outline: 2px solid #d6e6ee; outline-offset: 2px; }
+
+.control-button[aria-pressed="true"] #clouds-state { color: #cde8f4; }
+#clouds-state { color: #9caab4; font-size: 12px; }
+.menu-toggle { display: none; }
+
+.about-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 28px;
+  color: #eef4f7;
+  background: #172129;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 18px;
+  box-shadow: 0 24px 72px rgb(0 0 0 / 42%);
+}
+
+.about-dialog::backdrop { background: rgb(7 12 15 / 58%); backdrop-filter: blur(4px); }
+.about-dialog h1 { margin: 4px 0 12px; font-size: 24px; }
+.about-dialog p { color: #bdcad1; line-height: 1.55; }
+.dialog-kicker { margin: 0; color: #91a7b3 !important; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.dialog-close { position: absolute; top: 12px; right: 14px; padding: 4px 8px; color: #dce7ec; font-size: 24px; background: transparent; border: 0; cursor: pointer; }
+.dialog-links { display: flex; gap: 16px; margin-top: 22px; }
+.dialog-links a { color: #d8ecf4; text-underline-offset: 3px; }
 
 .leaflet-control-zoom {
   overflow: hidden;
@@ -110,6 +169,26 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
   border: 0;
 }
 
+@media (max-width: 1100px) {
+  .menu-toggle { display: inline-flex; align-items: center; }
+  .controls-panel {
+    position: absolute;
+    top: calc(100% + 14px);
+    right: 0;
+    display: none;
+    align-items: stretch;
+    width: 220px;
+    padding: 8px;
+    background: rgb(20 29 36 / 97%);
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 13px;
+    box-shadow: 0 16px 34px rgb(6 10 13 / 34%);
+  }
+  .controls-panel.is-open { display: grid; }
+  .controls-panel .control-button,
+  .controls-panel .external-link { justify-content: flex-start; width: 100%; }
+}
+
 @media (max-width: 620px) {
   .toolbar {
     top: 10px;
@@ -122,8 +201,12 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
   .brand span { display: none; }
   .brand strong { font-size: 14px; }
   .toolbar-actions { gap: 7px; }
-  .layer-picker select, .github-link { min-height: 34px; padding: 0 9px; font-size: 12px; }
+  .layer-picker select, .control-button, .external-link, .menu-toggle { min-height: 36px; padding: 0 10px; font-size: 12px; }
   .layer-picker select { min-width: 84px; }
-  .github-link span { display: none; }
+  .cloud-layer img { top: 12vh; left: -34vw; width: 180vw; opacity: 0.13; }
   .map-status { right: 10px; bottom: 8px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-layer img { animation: none; }
 }

@@ -36,6 +36,7 @@ class BuildMapDemoTests(unittest.TestCase):
             )
             self.assertEqual(result["maxZoom"], 2)
             self.assertEqual(result["tiles"], 9)
+            self.assertEqual(result["revision"], original_hash[:12])
             self.assertEqual(result["initialBounds"], [0, 0, 600, 400])
             self.assertEqual((result["sourceWidth"], result["sourceHeight"]), (600, 400))
 
@@ -45,13 +46,14 @@ class BuildMapDemoTests(unittest.TestCase):
                 with Image.open(tile_path) as tile:
                     self.assertEqual(tile.size, (256, 256))
 
-            with Image.open(root / "tiles" / "tourist" / "2" / "2" / "1.webp") as edge_tile:
+            tile_root = root / "tiles" / "tourist" / result["revision"]
+            with Image.open(tile_root / "2" / "2" / "1.webp") as edge_tile:
                 self.assertEqual(edge_tile.convert("RGBA").getpixel((88, 144))[3], 0)
 
             reconstruction = Image.new("RGB", image.size)
             for column in range(3):
                 for row in range(2):
-                    tile_path = root / "tiles" / "tourist" / "2" / str(column) / f"{row}.webp"
+                    tile_path = tile_root / "2" / str(column) / f"{row}.webp"
                     with Image.open(tile_path) as tile:
                         reconstruction.paste(tile.convert("RGB"), (column * 256, row * 256))
             self.assertEqual(reconstruction.tobytes(), image.tobytes())
