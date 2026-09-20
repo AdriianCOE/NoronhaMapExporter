@@ -19,15 +19,17 @@
         <span>Fernando de Noronha, Brazil 🇧🇷</span>
       </div>
       <div class="toolbar-actions">
-        <label class="layer-picker" for="layer-select">
-          <span class="visually-hidden">Map layer</span>
-          <select id="layer-select" disabled>
-            <option>Loading map…</option>
-          </select>
-        </label>
-        <button id="clouds-toggle" class="primary-control clouds-control" type="button" aria-pressed="true">
-          <span>Clouds</span><span id="clouds-state" class="control-state">On</span>
-        </button>
+        <div class="mobile-controls">
+          <label class="layer-picker" for="layer-select">
+            <span class="visually-hidden">Map layer</span>
+            <select id="layer-select" disabled>
+              <option>Loading map…</option>
+            </select>
+          </label>
+          <button id="clouds-toggle" class="primary-control clouds-control" type="button" aria-pressed="true">
+            <span>Clouds</span><span id="clouds-state" class="control-state">On</span>
+          </button>
+        </div>
         <button id="about-open" class="primary-control" type="button">About</button>
       </div>
     </header>

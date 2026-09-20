@@ -32,7 +32,7 @@ class CloudFieldTests(unittest.TestCase):
             alpha = image.getchannel("A")
             self.assertIsNotNone(alpha.getbbox())
             self.assertGreater(alpha.getextrema()[1], 80)
-            self.assertLessEqual(alpha.getextrema()[1], 190)
+            self.assertLessEqual(alpha.getextrema()[1], 172)
             self.assertNotEqual(alpha.getbbox(), (0, 0, image.width, image.height))
 
             corners = ((0, 0), (image.width - 1, 0), (0, image.height - 1), (image.width - 1, image.height - 1))

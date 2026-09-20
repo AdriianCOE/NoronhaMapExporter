@@ -31,27 +31,60 @@ def _noise(size: tuple[int, int], cells: tuple[int, int], rng: random.Random) ->
     return source.resize(size, Image.Resampling.BICUBIC)
 
 
+def _blend_octaves(
+    size: tuple[int, int],
+    octaves: tuple[tuple[tuple[int, int], float, int], ...],
+    rng: random.Random,
+) -> Image.Image:
+    field = None
+    total_weight = 0.0
+    for cells, weight, blur in octaves:
+        octave = _noise(size, cells, rng)
+        if blur:
+            octave = octave.filter(ImageFilter.GaussianBlur(blur))
+        if field is None:
+            field = octave
+            total_weight = weight
+            continue
+        field = Image.blend(field, octave, weight / (total_weight + weight))
+        total_weight += weight
+    assert field is not None
+    return field
+
+
 def _fractal_noise(spec: FieldSpec) -> Image.Image:
     rng = random.Random(spec.seed)
     width, height = spec.size
-    octaves = (
-        ((12, 6), 0.48, 24),
-        ((24, 12), 0.26, 14),
-        ((48, 24), 0.16, 8),
-        ((96, 48), 0.10, 4),
+    broad = _blend_octaves(
+        spec.size,
+        (
+            ((10, 5), 0.46, 18),
+            ((22, 11), 0.34, 9),
+            ((48, 24), 0.20, 4),
+        ),
+        rng,
     )
-    field = Image.new("L", spec.size, 127)
-    for cells, weight, blur in octaves:
-        octave = _noise(spec.size, cells, rng).filter(ImageFilter.GaussianBlur(blur))
-        field = Image.blend(field, octave, weight)
+    detail = _blend_octaves(
+        spec.size,
+        (
+            ((48, 24), 0.38, 3),
+            ((96, 48), 0.30, 1),
+            ((192, 96), 0.21, 0),
+            ((384, 192), 0.11, 0),
+        ),
+        rng,
+    ).filter(ImageFilter.UnsharpMask(radius=3, percent=125, threshold=2))
+
+    modulation = detail.point(lambda value: max(82, min(232, round(158 + (value - 128) * 1.35))))
+    field = Image.blend(broad, ImageChops.multiply(broad, modulation), 0.40)
 
     # A stretched low-frequency pass creates weather-front wisps without
     # introducing a recognizable cloud silhouette.
     streak = _noise((width, max(16, height // 5)), (42, 5), rng)
     streak = streak.resize(spec.size, Image.Resampling.BICUBIC)
     streak = streak.rotate(spec.streak_angle, resample=Image.Resampling.BICUBIC, expand=False, fillcolor=127)
-    streak = streak.filter(ImageFilter.GaussianBlur(max(8, width // 170)))
-    return Image.blend(field, streak, 0.24)
+    streak = streak.filter(ImageFilter.GaussianBlur(max(6, width // 220)))
+    return Image.blend(field, streak, 0.17)
 
 
 def _edge_feather(size: tuple[int, int]) -> Image.Image:
@@ -83,9 +116,11 @@ def generate_field(spec: FieldSpec) -> Image.Image:
     alpha = field.point(
         lambda value: 0
         if value <= spec.threshold
-        else min(190, round(((value - spec.threshold) / span) ** 1.65 * 190))
+        else min(172, round(((value - spec.threshold) / span) ** 1.62 * 172))
     )
-    alpha = alpha.filter(ImageFilter.GaussianBlur(max(3, spec.size[0] // 310)))
+    opened = alpha.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(5))
+    alpha = Image.blend(alpha, opened, 0.52)
+    alpha = alpha.filter(ImageFilter.GaussianBlur(max(2, spec.size[0] // 900)))
     alpha = ImageChops.multiply(alpha, _edge_feather(spec.size))
 
     # Transparent pixels are neutral black, preventing colored fringe when the
