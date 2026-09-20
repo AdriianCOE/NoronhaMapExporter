@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#172129">
+    <meta name="description" content="Interactive preview of a native DayZ map export.">
+    <title>NoronhaMapExporter — Interactive map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main id="map" aria-label="Interactive Noronha map"></main>
+
+    <header class="toolbar" aria-label="Map controls">
+      <div class="brand">
+        <strong>NoronhaMapExporter</strong>
+        <span>Interactive export preview</span>
+      </div>
+      <div class="toolbar-actions">
+        <label class="layer-picker" for="layer-select">
+          <span class="visually-hidden">Map layer</span>
+          <select id="layer-select" disabled>
+            <option>Loading map…</option>
+          </select>
+        </label>
+        <a id="github-link" class="github-link" href="https://github.com/AdriianCOE/NoronhaMapExporter" target="_blank" rel="noreferrer">
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <p id="map-status" class="map-status" role="status">Loading interactive map…</p>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./map-config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

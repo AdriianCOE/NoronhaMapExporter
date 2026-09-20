@@ -1,0 +1,129 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #10171c;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #map { height: 100%; margin: 0; overflow: hidden; }
+
+#map { background: #b9d2df; }
+
+.toolbar {
+  position: fixed;
+  z-index: 1000;
+  top: 18px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: min(720px, calc(100vw - 32px));
+  min-height: 70px;
+  padding: 12px 14px 12px 20px;
+  color: #f7fafc;
+  background: rgb(20 29 36 / 94%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgb(6 10 13 / 28%);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px);
+}
+
+.brand { display: grid; gap: 2px; min-width: 0; }
+.brand strong { font-size: 16px; letter-spacing: -0.02em; }
+.brand span { color: #aab8c1; font-size: 12px; }
+
+.toolbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.layer-picker select,
+.github-link {
+  min-height: 38px;
+  padding: 0 12px;
+  color: #f7fafc;
+  font: inherit;
+  font-size: 14px;
+  background: rgb(255 255 255 / 5%);
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 10px;
+}
+
+.layer-picker select { min-width: 112px; cursor: pointer; }
+.layer-picker select:disabled { color: #9caab4; cursor: wait; }
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.layer-picker select:hover:not(:disabled),
+.github-link:hover { background: rgb(255 255 255 / 12%); }
+
+.github-link:focus-visible,
+.layer-picker select:focus-visible { outline: 2px solid #d6e6ee; outline-offset: 2px; }
+
+.leaflet-control-zoom {
+  overflow: hidden;
+  border: 1px solid rgb(18 28 35 / 20%) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 18%) !important;
+}
+
+.leaflet-control-zoom a {
+  width: 34px !important;
+  height: 34px !important;
+  color: #172129 !important;
+  line-height: 34px !important;
+  background: rgb(255 255 255 / 94%) !important;
+}
+
+.leaflet-control-zoom a:hover { background: #f7fafc !important; }
+
+.map-status {
+  position: fixed;
+  z-index: 1001;
+  right: 18px;
+  bottom: 14px;
+  max-width: min(360px, calc(100vw - 36px));
+  margin: 0;
+  padding: 8px 10px;
+  color: #62747f;
+  font-size: 12px;
+  line-height: 1.35;
+  background: rgb(255 255 255 / 78%);
+  border-radius: 7px;
+}
+
+.map-status.is-hidden { display: none; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 620px) {
+  .toolbar {
+    top: 10px;
+    gap: 12px;
+    min-height: 62px;
+    padding: 10px 11px 10px 14px;
+    border-radius: 13px;
+  }
+
+  .brand span { display: none; }
+  .brand strong { font-size: 14px; }
+  .toolbar-actions { gap: 7px; }
+  .layer-picker select, .github-link { min-height: 34px; padding: 0 9px; font-size: 12px; }
+  .layer-picker select { min-width: 84px; }
+  .github-link span { display: none; }
+  .map-status { right: 10px; bottom: 8px; font-size: 11px; }
+}
