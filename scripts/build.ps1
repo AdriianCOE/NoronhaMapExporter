@@ -35,7 +35,14 @@ $packageRoot = Split-Path -Parent $OutputDirectory
 # AddonBuilder derives the PBO prefix from the source directory name when
 # packing without a project file. Keep that name aligned with CfgMods' script
 # path; otherwise the config loads but mission scripts are not discoverable.
-$stageSourceDirectory = Join-Path $repoRoot ('.runtime\addon-stage\' + $CartographyStyle + '\DayZMapExporter')
+$stageRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '.runtime\addon-stage'))
+$stageSourceDirectory = [System.IO.Path]::GetFullPath((Join-Path $stageRoot ($CartographyStyle + '\DayZMapExporter')))
+if (-not $stageSourceDirectory.StartsWith($stageRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing to clean an addon staging path outside $stageRoot"
+}
+if (Test-Path -LiteralPath $stageSourceDirectory) {
+    Remove-Item -LiteralPath $stageSourceDirectory -Recurse -Force
+}
 New-Item -ItemType Directory -Force -Path $stageSourceDirectory, $OutputDirectory | Out-Null
 Copy-Item -Path (Join-Path $sourceDirectory '*') -Destination $stageSourceDirectory -Recurse -Force
 
@@ -53,7 +60,8 @@ $stageConfigText = $stageConfigText.Replace('// CLEAN_LOCATION_OVERRIDE_PLACEHOL
 if ($LASTEXITCODE -ne 0) { throw "CfgConvert validation failed with exit code $LASTEXITCODE" }
 & $cfgConvert -bin -dst (Join-Path $stageSourceDirectory 'config.bin') $stageConfig
 if ($LASTEXITCODE -ne 0) { throw "CfgConvert binarization failed with exit code $LASTEXITCODE" }
-& $addonBuilder $stageSourceDirectory $OutputDirectory '-packonly'
+Remove-Item -LiteralPath $stageConfig, (Join-Path $stageSourceDirectory 'mod.cpp') -Force
+& $addonBuilder $stageSourceDirectory $OutputDirectory '-packonly' '-clear'
 if ($LASTEXITCODE -ne 0) { throw "AddonBuilder failed with exit code $LASTEXITCODE" }
 
 $generatedPbo = Join-Path $OutputDirectory 'DayZMapExporter.pbo'

@@ -128,4 +128,8 @@ For implementation details, see [Architecture](docs/ARCHITECTURE.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Project-authored code and documentation are available under the MIT license. See [LICENSE](LICENSE).
+
+Leaflet 1.9.4 is bundled under its BSD 2-Clause license in
+[`web/vendor/leaflet/LICENSE`](web/vendor/leaflet/LICENSE). Preview images show
+project output and do not relicense DayZ, Bohemia, or third-party terrain assets.

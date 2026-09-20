@@ -1,11 +1,16 @@
 # NoronhaMapExporter stitcher
 
-This is the offline half of the exporter. It consumes the `manifest.json`
-created by the DayZ prototype and clean screenshots manually placed in the
-session's `captures/` directory. It does not capture DayZ and it does not use
-image-feature matching.
+The primary workflow is `.\setup.ps1` followed by `.\run-2d.ps1`. The notes
+below document the stitcher and the manual capture fallback used for advanced
+diagnostics.
 
-## Capture session
+This is the offline half of the exporter. It consumes the `manifest.json`
+created by the DayZ exporter. In the normal workflow, the capture helper writes
+the PNG files and ACKs automatically; screenshots placed manually in the
+session's `captures/` directory remain a diagnostic fallback. The stitcher
+does not capture DayZ and does not use image-feature matching.
+
+## Manual capture fallback
 
 1. Open the exporter with `Ctrl+F8` and wait for calibration.
 2. Press `F6` to start the full grid. It calculates its columns and rows from
