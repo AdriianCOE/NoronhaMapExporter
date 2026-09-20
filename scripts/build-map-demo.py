@@ -160,7 +160,7 @@ def main() -> int:
     asset_bytes = sum(path.stat().st_size for path in (output / "tiles").rglob("*.webp"))
     manifest = {
         "format": "NoronhaMapExporter static map package v1",
-        "layers": generated,
+        "layers": [{key: value for key, value in layer.items() if key != "source"} for layer in generated],
         "totalTiles": sum(int(layer["tiles"]) for layer in generated),
         "tileAssetBytes": asset_bytes,
     }
