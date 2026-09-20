@@ -18,6 +18,8 @@ the name, NoronhaMapExporter is made for any compatible DayZ terrain.
 .\run-2d.ps1
 ```
 
+Windows · DayZ · DayZ Tools · Python 3 · .NET 8 SDK
+
 `setup.ps1` finds DayZ and DayZ Tools, lets you choose Chernarus, Livonia, or a
 custom terrain, creates `config.json`, creates the offline exporter mission,
 and checks the dependencies. `run-2d.ps1` builds the exporter addon, starts

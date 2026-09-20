@@ -36,7 +36,7 @@ class CfgMods
 		dir = "DayZMapExporter";
 		name = "Noronha Map Exporter";
 		author = "NoronhaMapExporter contributors";
-		version = "1.0.0-rc.1";
+		version = "1.0.0-rc.2";
 		class defs
 		{
 			class missionScriptModule

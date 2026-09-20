@@ -53,6 +53,10 @@ function Resolve-SetupPath([string]$Current, [string]$Detected, [string]$Label, 
         if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^(?i)y(es)?$') { return $Detected }
     }
     if ($NonInteractive) { throw "$Label was not detected. Pass its path explicitly." }
+    if ($Label -eq 'DayZ Tools') {
+        Write-Host 'DayZ Tools was not found.'
+        Write-Host 'Install "DayZ Tools" from Steam Library > Tools, or enter an existing installation path:'
+    }
     $manual = Read-Host "Enter $Label folder (contains $RequiredFile)"
     if ([string]::IsNullOrWhiteSpace($manual)) { throw "$Label path is required." }
     return [System.IO.Path]::GetFullPath($manual)
@@ -73,8 +77,13 @@ function Invoke-Preflight([string]$Path) {
         & $python -c 'import PIL, numpy' 2>$null
         $pythonPackagesOk = $LASTEXITCODE -eq 0
     }
-    $dotnetSdks = @(& dotnet --list-sdks 2>$null)
-    $dotnetOk = $LASTEXITCODE -eq 0 -and ($dotnetSdks | Where-Object { $_ -match '^8\.' }).Count -gt 0
+    $dotnetCommand = Get-Command dotnet -ErrorAction SilentlyContinue
+    $dotnetSdks = @()
+    $dotnetOk = $false
+    if ($dotnetCommand) {
+        $dotnetSdks = @(& $dotnetCommand.Source --list-sdks 2>$null)
+        $dotnetOk = $LASTEXITCODE -eq 0 -and ($dotnetSdks | Where-Object { $_ -match '^8\.' }).Count -gt 0
+    }
     $allOk = $true
     $allOk = (Write-Check 'DayZ' $true $validation.dayz) -and $allOk
     $allOk = (Write-Check 'DayZDiag' (Test-Path -LiteralPath (Join-Path $validation.dayz 'DayZDiag_x64.exe')) '') -and $allOk
