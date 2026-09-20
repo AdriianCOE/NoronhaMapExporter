@@ -12,15 +12,56 @@ html, body, #map { height: 100%; margin: 0; overflow: hidden; }
 
 button, select, a { -webkit-tap-highlight-color: transparent; }
 
-.weather-cloud {
-  filter: grayscale(1) saturate(0) contrast(0.9) brightness(1.08);
-  mix-blend-mode: normal;
+.cloud-field {
+  position: absolute;
+  overflow: hidden;
+  opacity: var(--cloud-opacity);
   pointer-events: none !important;
+  transition: opacity 320ms ease;
+}
+
+.cloud-field__motion {
+  position: absolute;
+  inset: -9%;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
   will-change: transform;
 }
 
-.weather-cloud-2 { filter: grayscale(1) saturate(0) contrast(0.88) brightness(1.04); }
-.weather-cloud-3 { filter: grayscale(1) saturate(0) contrast(0.92) brightness(1.02); }
+.cloud-field__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.clouds-disabled .cloud-field {
+  visibility: hidden;
+  opacity: 0;
+}
+
+@keyframes cloud-drift-northwest {
+  0%, 100% { transform: translate3d(-1.8%, -0.8%, 0) scale(1.02); }
+  28% { transform: translate3d(0.4%, -0.2%, 0) scale(1.025); }
+  58% { transform: translate3d(2.1%, 1.1%, 0) scale(1.02); }
+  82% { transform: translate3d(-0.2%, 0.7%, 0) scale(1.015); }
+}
+
+@keyframes cloud-drift-southwest {
+  0%, 100% { transform: translate3d(1.6%, 0.9%, 0) scale(1.018); }
+  31% { transform: translate3d(0.2%, -0.6%, 0) scale(1.025); }
+  63% { transform: translate3d(-2.0%, -1.1%, 0) scale(1.02); }
+  84% { transform: translate3d(-0.5%, 0.5%, 0) scale(1.015); }
+}
+
+@keyframes cloud-drift-northeast {
+  0%, 100% { transform: translate3d(-1.3%, 0.6%, 0) scale(1.02); }
+  24% { transform: translate3d(0.1%, -0.8%, 0) scale(1.015); }
+  55% { transform: translate3d(1.8%, -0.2%, 0) scale(1.025); }
+  79% { transform: translate3d(0.4%, 0.9%, 0) scale(1.018); }
+}
 
 .leaflet-tile { transition: opacity 180ms ease-out; }
 
@@ -207,4 +248,5 @@ button, select, a { -webkit-tap-highlight-color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  .cloud-field__motion { animation: none !important; transform: translate3d(0, 0, 0) scale(1.02); }
 }

@@ -13,7 +13,6 @@
   const aboutDialog = document.getElementById("about-dialog");
   const aboutOpen = document.getElementById("about-open");
   const aboutClose = document.getElementById("about-close");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const tileSize = config.layers?.[0]?.tileSize || 256;
   const pixelCrs = L.Util.extend({}, L.CRS.Simple, {
     scale(zoom) {
@@ -37,21 +36,18 @@
   const cloudSystems = [
     {
       src: "./assets/cloud-system-1.webp",
-      x: -0.04, y: -0.01, width: 0.72, height: 0.43,
-      opacity: 0.34, driftX: 0.035, driftY: 0.012,
-      duration: 190000, phase: 0
+      x: -0.08, y: 0.05, width: 0.84, height: 0.38,
+      opacity: 0.80, duration: 214000, animation: "cloud-drift-northwest"
     },
     {
       src: "./assets/cloud-system-2.webp",
-      x: 0.42, y: 0.10, width: 0.54, height: 0.36,
-      opacity: 0.27, driftX: -0.026, driftY: 0.017,
-      duration: 235000, phase: Math.PI * 0.72
+      x: -0.06, y: 0.60, width: 0.76, height: 0.36,
+      opacity: 0.76, duration: 287000, animation: "cloud-drift-southwest"
     },
     {
       src: "./assets/cloud-system-3.webp",
-      x: 0.12, y: 0.50, width: 0.72, height: 0.32,
-      opacity: 0.25, driftX: 0.028, driftY: -0.014,
-      duration: 275000, phase: Math.PI * 1.38
+      x: 0.56, y: 0.01, width: 0.48, height: 0.27,
+      opacity: 0.68, duration: 253000, animation: "cloud-drift-northeast"
     }
   ];
 
@@ -74,19 +70,81 @@
   let activeLayer;
   let activeTileLayer;
   let cloudsEnabled = config.cloudsEnabled !== false;
-  let cloudAnimationFrame;
-  const cloudOverlays = cloudSystems.map((system, index) => {
-    const overlay = L.imageOverlay(system.src, [[0, 0], [0, 0]], {
-      pane: "cloudPane",
-      opacity: system.opacity,
-      interactive: false,
-      className: `weather-cloud weather-cloud-${index + 1}`
-    });
-    overlay.on("error", () => {
+  const CloudFieldLayer = L.Layer.extend({
+    initialize(system, index) {
+      this.system = system;
+      this.index = index;
+      this._bounds = L.latLngBounds([[0, 0], [0, 0]]);
+    },
+
+    onAdd(targetMap) {
+      this._map = targetMap;
+      if (!this._container) this._initContainer();
+      this.getPane("cloudPane").appendChild(this._container);
+      this._reset();
+    },
+
+    onRemove() {
+      L.DomUtil.remove(this._container);
+      this._map = null;
+    },
+
+    getEvents() {
+      const events = { zoom: this._reset, viewreset: this._reset };
+      if (this._map?._zoomAnimated) events.zoomanim = this._animateZoom;
+      return events;
+    },
+
+    setBounds(bounds) {
+      this._bounds = L.latLngBounds(bounds);
+      if (this._map) this._reset();
+      return this;
+    },
+
+    getElement() {
+      return this._container;
+    },
+
+    _initContainer() {
+      const zoomClass = map._zoomAnimated ? "leaflet-zoom-animated" : "leaflet-zoom-hide";
+      this._container = L.DomUtil.create("div", `cloud-field ${zoomClass}`);
+      this._container.dataset.cloudField = String(this.index + 1);
+      this._container.style.setProperty("--cloud-opacity", String(this.system.opacity));
+      this._motion = L.DomUtil.create("div", "cloud-field__motion", this._container);
+      this._motion.style.animationName = this.system.animation;
+      this._motion.style.animationDuration = `${this.system.duration}ms`;
+      this._motion.style.animationDelay = `${-Math.round(this.system.duration * (this.index + 1) * 0.19)}ms`;
+      this._image = L.DomUtil.create("img", "cloud-field__image", this._motion);
+      this._image.alt = "";
+      this._image.draggable = false;
+      this._image.src = this.system.src;
+      this._image.addEventListener("error", () => this.fire("error"));
+    },
+
+    _reset() {
+      if (!this._map) return;
+      const topLeft = this._map.latLngToLayerPoint(this._bounds.getNorthWest());
+      const bottomRight = this._map.latLngToLayerPoint(this._bounds.getSouthEast());
+      const size = bottomRight.subtract(topLeft);
+      L.DomUtil.setPosition(this._container, topLeft);
+      this._container.style.width = `${size.x}px`;
+      this._container.style.height = `${size.y}px`;
+    },
+
+    _animateZoom(event) {
+      const scale = this._map.getZoomScale(event.zoom);
+      const offset = this._map._latLngBoundsToNewLayerBounds(this._bounds, event.zoom, event.center).min;
+      L.DomUtil.setTransform(this._container, offset, scale);
+    }
+  });
+
+  const cloudLayers = cloudSystems.map((system, index) => {
+    const field = new CloudFieldLayer(system, index);
+    field.on("error", () => {
       status.textContent = "An optional cloud system could not be loaded.";
       status.classList.remove("is-hidden");
     });
-    return overlay;
+    return field;
   });
 
   function boundsFor(layer) {
@@ -104,9 +162,9 @@
     );
   }
 
-  function cloudBounds(system, offsetX = 0, offsetY = 0) {
-    const left = (system.x + offsetX) * activeLayer.width;
-    const top = (system.y + offsetY) * activeLayer.height;
+  function cloudBounds(system) {
+    const left = system.x * activeLayer.width;
+    const top = system.y * activeLayer.height;
     const right = left + system.width * activeLayer.width;
     const bottom = top + system.height * activeLayer.height;
     return L.latLngBounds(
@@ -115,43 +173,13 @@
     );
   }
 
-  function positionClouds(timestamp) {
-    if (!activeLayer) return;
-    cloudSystems.forEach((system, index) => {
-      const angle = reducedMotion.matches
-        ? system.phase
-        : ((timestamp % system.duration) / system.duration) * Math.PI * 2 + system.phase;
-      const offsetX = reducedMotion.matches ? 0 : Math.sin(angle) * system.driftX;
-      const offsetY = reducedMotion.matches ? 0 : Math.cos(angle * 0.72) * system.driftY;
-      cloudOverlays[index].setBounds(cloudBounds(system, offsetX, offsetY));
-    });
-  }
-
-  function animateClouds(timestamp) {
-    positionClouds(timestamp);
-    if (cloudsEnabled && !reducedMotion.matches) {
-      cloudAnimationFrame = window.requestAnimationFrame(animateClouds);
-    }
-  }
-
-  function stopCloudAnimation() {
-    if (cloudAnimationFrame) {
-      window.cancelAnimationFrame(cloudAnimationFrame);
-      cloudAnimationFrame = undefined;
-    }
-  }
-
   function syncClouds() {
     if (!activeLayer) return;
-    stopCloudAnimation();
-    positionClouds(performance.now());
-    cloudOverlays.forEach((overlay) => {
-      if (cloudsEnabled && !map.hasLayer(overlay)) overlay.addTo(map);
-      if (!cloudsEnabled && map.hasLayer(overlay)) map.removeLayer(overlay);
+    cloudLayers.forEach((field, index) => {
+      field.setBounds(cloudBounds(cloudSystems[index]));
+      if (!map.hasLayer(field)) field.addTo(map);
     });
-    if (cloudsEnabled && !reducedMotion.matches) {
-      cloudAnimationFrame = window.requestAnimationFrame(animateClouds);
-    }
+    map.getContainer().classList.toggle("clouds-disabled", !cloudsEnabled);
   }
 
   function showLayer(id) {
@@ -198,7 +226,7 @@
     cloudsEnabled = enabled;
     cloudsToggle.setAttribute("aria-pressed", String(enabled));
     cloudsState.textContent = enabled ? "On" : "Off";
-    syncClouds();
+    map.getContainer().classList.toggle("clouds-disabled", !enabled);
   }
 
   function closeAbout() {
@@ -224,8 +252,6 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeAbout();
   });
-  reducedMotion.addEventListener("change", syncClouds);
-
   const preferred = config.defaultLayer || config.layers[0].id;
   selector.value = preferred;
   showLayer(preferred);
