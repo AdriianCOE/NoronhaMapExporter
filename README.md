@@ -131,7 +131,6 @@ The full capture workflow currently requires Windows because it depends on DayZD
 - DayZ
 - DayZ Tools
 - Python 3
-- Pillow and NumPy
 - .NET 8 SDK
 
 Install the Python dependencies with:
