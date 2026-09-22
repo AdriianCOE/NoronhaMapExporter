@@ -26,7 +26,9 @@ function Write-ExporterConfig($Validation, $Scale) {
         CaptureTimeoutSeconds = if ($capture.timeoutSeconds) { [int]$capture.timeoutSeconds } else { 30 }
         DetailAudit = [ordered]@{ Enabled = $false; CenterX = 0; CenterZ = 0; Scales = @([double]$Scale) }
     }
-    $payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $runtime 'exporter-config.json') -Encoding utf8
+    $configPath = Join-Path $runtime 'exporter-config.json'
+    $json = $payload | ConvertTo-Json -Depth 5
+    [System.IO.File]::WriteAllText($configPath, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 }
 
 function Find-CompletedSession($SessionsRoot, [datetime]$StartedAt, [double]$Scale) {
